@@ -1,0 +1,31 @@
+{
+  "name": "logiciel-immo-clean",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/auth-helpers-react": "^0.5.0",
+    "@supabase/supabase-js": "^2.39.7",
+    "axios": "^1.8.4",
+    "chart.js": "^4.4.8",
+    "cheerio": "^1.0.0",
+    "file-saver": "^2.0.5",
+    "next": "13.4.19",
+    "papaparse": "^5.5.2",
+    "puppeteer": "^24.4.0",
+    "react": "18.2.0",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "18.2.0",
+    "react-dropzone": "^14.3.8"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.3.0"
+  }
+}
