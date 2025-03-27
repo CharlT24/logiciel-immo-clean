@@ -22,10 +22,10 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/biens/[id]": [
+    "/clients": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/biens/[id].js"
+      "static/chunks/pages/clients.js"
     ],
     "/dashboard": [
       "static/chunks/webpack.js",
