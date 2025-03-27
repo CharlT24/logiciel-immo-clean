@@ -1,0 +1,72 @@
+import { useEffect, useState } from "react"
+import { useRouter } from "next/router"
+import { supabase } from "@/lib/supabaseClient"
+import Link from "next/link"
+
+export default function AgentPage() {
+  const router = useRouter()
+  const { id } = router.query
+
+  const [biens, setBiens] = useState([])
+  const [clients, setClients] = useState([])
+  const [agent, setAgent] = useState(null)
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    if (!id) return
+    const fetchData = async () => {
+      const session = await supabase.auth.getSession()
+      const userId = session.data?.session?.user?.id
+      setUser(userId)
+
+      const { data: agentData } = await supabase.from("utilisateurs").select("*").eq("id", id).single()
+      setAgent(agentData)
+
+      const { data: biensData } = await supabase.from("biens").select("*").eq("agent_id", id)
+      setBiens(biensData || [])
+
+      const { data: clientData } = await supabase.from("clients").select("*").eq("agent_id", userId)
+      setClients(clientData || [])
+    }
+    fetchData()
+  }, [id])
+
+  const checkRapprochement = (bien) => {
+    return clients.some((client) => {
+      const budgetOk = client.budget_min <= bien.prix && client.budget_max >= bien.prix
+      const villeOk = client.ville?.toLowerCase() === bien.ville?.toLowerCase()
+      return budgetOk && villeOk
+    })
+  }
+
+  return (
+    <div className="p-8">
+      <Link href="/reseau">
+        <span className="text-sm text-orange-600 hover:underline mb-4 block">⬅️ Retour au réseau</span>
+      </Link>
+
+      <h1 className="text-2xl font-bold mb-4">
+        📍 Biens de l’agent {agent?.nom || "Chargement..."}
+      </h1>
+
+      {biens.length === 0 ? (
+        <p>Aucun bien trouvé pour cet agent.</p>
+      ) : (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {biens.map((bien) => (
+            <div key={bien.id} className="border rounded-lg shadow p-4 bg-white">
+              <h2 className="text-lg font-semibold">{bien.titre}</h2>
+              <p className="text-sm text-gray-600">📍 {bien.ville}</p>
+              <p className="text-sm">💰 {bien.prix?.toLocaleString()} €</p>
+              <p className="text-sm">📐 {bien.surface_m2} m²</p>
+              <p className="text-sm">🔋 DPE : {bien.dpe}</p>
+              {checkRapprochement(bien) && (
+                <p className="text-green-600 font-semibold mt-2">🟢 Rapprochement possible</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
