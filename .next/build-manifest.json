@@ -22,30 +22,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/clients": [
+    "/biens": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/clients.js"
+      "static/chunks/pages/biens.js"
     ],
     "/dashboard": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/dashboard.js"
-    ],
-    "/espace": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/espace.js"
-    ],
-    "/rapprochements": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/rapprochements.js"
-    ],
-    "/reseau": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/reseau.js"
     ]
   },
   "ampFirstPages": []

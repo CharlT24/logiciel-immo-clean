@@ -1,34 +1,116 @@
-import { useRouter } from "next/router"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/router"
 import { supabase } from "@/lib/supabaseClient"
+import CarteGoogle from "@/components/CarteGoogle"
 
 export default function FicheBien() {
   const router = useRouter()
   const { id } = router.query
+
   const [bien, setBien] = useState(null)
+  const [agentId, setAgentId] = useState(null)
 
   useEffect(() => {
     if (!id) return
-    const fetchBien = async () => {
-      const { data } = await supabase.from("biens").select("*").eq("id", id).single()
-      setBien(data)
+
+    const fetchData = async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const currentUserId = sessionData?.session?.user?.id
+      setAgentId(currentUserId)
+
+      const { data: bienData, error } = await supabase.from("biens").select("*").eq("id", id).single()
+
+      if (bienData && (!bienData.lat || !bienData.lng)) {
+        const geo = await geocodeVille(bienData.ville)
+        if (geo) {
+          await supabase.from("biens").update({
+            lat: geo.lat,
+            lng: geo.lng
+          }).eq("id", bienData.id)
+          bienData.lat = geo.lat
+          bienData.lng = geo.lng
+        }
+      }
+
+      setBien(bienData)
     }
-    fetchBien()
+
+    fetchData()
   }, [id])
 
-  if (!bien) return <div className="p-8">Chargement...</div>
+  const geocodeVille = async (ville) => {
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(ville)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+      )
+      const data = await response.json()
+      if (data.results.length > 0) {
+        const { lat, lng } = data.results[0].geometry.location
+        return { lat, lng }
+      }
+    } catch (error) {
+      console.error("Erreur géocodage :", error)
+    }
+    return null
+  }
+
+  if (!bien) return <p className="p-8">Chargement du bien...</p>
+
+  const isMine = agentId === bien.agent_id
+
+  const handlePDF = () => {
+    const url = `/api/generer-pdf?id=${bien.id}`
+    window.open(url, "_blank")
+  }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto bg-white rounded shadow space-y-6 mt-10">
-      <h1 className="text-3xl font-bold">{bien.titre}</h1>
-      <p>📍 {bien.ville} – {bien.surface_m2} m²</p>
-      <p>💰 {bien.prix?.toLocaleString()} €</p>
-      <p>🔋 DPE : {bien.dpe || "NC"}</p>
-      <p>📝 {bien.description || "Aucune description."}</p>
+    <div className="p-8">
+      <a href="/dashboard" className="text-sm text-orange-600 hover:underline">⬅️ Retour au Dashboard</a>
 
-      <div className="pt-4">
-        <a href={`/biens/${bien.id}/modifier`} className="text-blue-600 underline">✏️ Modifier</a> |{" "}
-        <a href="/biens" className="text-gray-600 underline">← Retour</a>
+      <h1 className="text-3xl font-bold mt-4 mb-4">{bien.titre}</h1>
+
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
+        <div className="space-y-2">
+          <p><strong>📍 Ville :</strong> {bien.ville}</p>
+          <p><strong>📏 Surface :</strong> {bien.surface_m2} m²</p>
+          <p><strong>💰 Prix :</strong> {bien.prix?.toLocaleString()} €</p>
+          <p><strong>🔋 DPE :</strong> {bien.dpe}</p>
+          <p><strong>💼 Honoraires :</strong> {bien.honoraires?.toLocaleString()} €</p>
+          <p><strong>📅 Disponibilité :</strong> {bien.disponible ? "🟢 Disponible" : "🔴 Indisponible"}</p>
+          <p><strong>📦 Statut :</strong>
+            {bien.vendu ? "✅ Vendu" : bien.sous_compromis ? "📑 Sous compromis" : "🟢 En vente"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-sm text-gray-500 mb-2">📝 Description :</p>
+          <div className="bg-white p-4 rounded shadow text-sm text-gray-700 whitespace-pre-wrap">{bien.description}</div>
+        </div>
+      </div>
+
+      {bien.lat && bien.lng && (
+        <>
+          <h2 className="text-lg font-semibold mt-8 mb-2">🗺️ Localisation</h2>
+          <CarteGoogle lat={bien.lat} lng={bien.lng} />
+        </>
+      )}
+
+      <div className="mt-6 flex flex-wrap gap-4">
+        {isMine && (
+          <a
+            href={`/biens/modifier?id=${bien.id}`}
+            className="inline-block px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
+          >
+            ✏️ Modifier ce bien
+          </a>
+        )}
+
+        <button
+          onClick={handlePDF}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        >
+          📄 Générer PDF
+        </button>
       </div>
     </div>
   )

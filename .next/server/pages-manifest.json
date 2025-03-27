@@ -2,9 +2,6 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/dashboard": "pages/dashboard.js",
-  "/espace": "pages/espace.js",
-  "/clients": "pages/clients.js",
-  "/reseau": "pages/reseau.js",
-  "/rapprochements": "pages/rapprochements.js"
+  "/biens": "pages/biens.js",
+  "/dashboard": "pages/dashboard.js"
 }
