@@ -26,6 +26,7 @@ export default function Layout({ children }) {
             <NavItem href="/rapprochements" icon="🔍" label="Rapprochements" />
             <NavItem href="/statistiques" icon="📊" label="Statistiques" />
             <NavItem href="/parametres" icon="⚙️" label="Paramètres" />
+            <NavItem href="/mentions-legales" icon="📜" label="Mentions légales" />
           </nav>
         </aside>
 

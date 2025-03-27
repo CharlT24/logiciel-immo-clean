@@ -1,47 +1,48 @@
-// components/Layout.js
+// pages/biens/index.js
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
-import Image from "next/image"
 
-export default function Layout({ children }) {
+export default function Biens() {
+  const [biens, setBiens] = useState([])
+  const [userId, setUserId] = useState(null)
+
+  useEffect(() => {
+    const fetchBiens = async () => {
+      const session = await supabase.auth.getSession()
+      const agentId = session.data?.session?.user?.id
+      setUserId(agentId)
+
+      const { data, error } = await supabase.from("biens").select("*")
+      if (!error) setBiens(data)
+    }
+
+    fetchBiens()
+  }, [])
+
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* TOPBAR */}
-      <header className="bg-white shadow-md px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center space-x-3">
-          <Image src="/logo.png" alt="Logo" width={40} height={40} />
-          <h1 className="text-xl font-bold text-orange-600">Open Immobilier</h1>
-        </div>
-        <div className="text-sm text-gray-600">Bienvenue 👋</div>
-      </header>
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-800">🏡 Tous les biens</h2>
+        <Link href="/biens/ajouter" className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">
+          ➕ Ajouter un bien
+        </Link>
+      </div>
 
-      <div className="flex flex-1">
-        {/* SIDEBAR GAUCHE */}
-        <aside className="w-64 bg-gray-50 border-r p-5 hidden md:block">
-          <nav className="flex flex-col space-y-4 text-sm">
-            <Link href="/dashboard" className="hover:text-orange-600">🏠 Tableau de bord</Link>
-            <Link href="/biens" className="hover:text-orange-600">🏡 Biens</Link>
-            <Link href="/clients" className="hover:text-orange-600">👥 Clients</Link>
-            <Link href="/reseau" className="hover:text-orange-600">🌐 Mon réseau</Link>
-            <Link href="/rapprochements" className="hover:text-orange-600">🔍 Rapprochements</Link>
-            <Link href="/statistiques" className="hover:text-orange-600">📊 Statistiques</Link>
-            <Link href="/parametres" className="hover:text-orange-600">⚙️ Paramètres</Link>
-          </nav>
-        </aside>
-
-        {/* CONTENU PRINCIPAL */}
-        <main className="flex-1 bg-gray-100 p-6">{children}</main>
-
-        {/* ACTIONS RAPIDES */}
-        <aside className="w-72 bg-white border-l p-5 hidden xl:block">
-          <h2 className="font-semibold text-gray-700 mb-4">⚡ Actions rapides</h2>
-          <div className="flex flex-col space-y-3 text-sm">
-            <Link href="/biens/ajouter" className="text-blue-600 hover:underline">➕ Ajouter un bien</Link>
-            <Link href="/clients/ajouter" className="text-blue-600 hover:underline">👤 Nouveau client</Link>
-            <Link href="/agenda" className="text-blue-600 hover:underline">🗓️ Accéder à l'agenda</Link>
-            <Link href="/reseau" className="text-blue-600 hover:underline">🌐 Voir les agents</Link>
-            <Link href="/statistiques" className="text-blue-600 hover:underline">📊 Voir les stats</Link>
-          </div>
-        </aside>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+        {biens.length === 0 ? (
+          <p>Aucun bien disponible.</p>
+        ) : (
+          biens.map((bien) => (
+            <div key={bien.id} className="bg-white shadow rounded-xl p-4 space-y-2 border">
+              <h3 className="text-lg font-semibold">{bien.titre}</h3>
+              <p className="text-sm text-gray-500">📍 {bien.ville}</p>
+              <p className="text-sm">📐 {bien.surface_m2} m² – 💰 {bien.prix.toLocaleString()} €</p>
+              <p className="text-xs text-gray-400">🔋 DPE : {bien.dpe}</p>
+              <Link href={`/biens/${bien.id}`} className="text-sm text-orange-600 underline">Voir la fiche</Link>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )
