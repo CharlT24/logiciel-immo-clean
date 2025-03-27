@@ -3,5 +3,8 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/dashboard": "pages/dashboard.js",
-  "/biens": "pages/biens.js"
+  "/espace": "pages/espace.js",
+  "/clients": "pages/clients.js",
+  "/reseau": "pages/reseau.js",
+  "/rapprochements": "pages/rapprochements.js"
 }

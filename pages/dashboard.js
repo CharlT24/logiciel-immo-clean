@@ -1,126 +1,107 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { useRouter } from "next/router"
-import { Bar } from "react-chartjs-2"
-import {
-  Chart as ChartJS,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend
-} from "chart.js"
-
-ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend)
+import Link from "next/link"
 
 export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [biens, setBiens] = useState([])
   const [clients, setClients] = useState([])
-  const [caMensuel, setCaMensuel] = useState({})
-  const router = useRouter()
+  const [recents, setRecents] = useState({ biens: [], clients: [] })
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return router.push("/login")
-      setUser(session.user)
-      fetchData(session.user.id)
+    const fetchData = async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const user = sessionData?.session?.user
+      if (!user) return
+
+      setUser(user)
+
+      const { data: biensData } = await supabase.from("biens").select("*").eq("agent_id", user.id)
+      const { data: clientsData } = await supabase.from("clients").select("*").eq("agent_id", user.id)
+
+      const { data: recentBiens } = await supabase
+        .from("biens")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(5)
+
+      const { data: recentClients } = await supabase
+        .from("clients")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(5)
+
+      setBiens(biensData || [])
+      setClients(clientsData || [])
+      setRecents({ biens: recentBiens || [], clients: recentClients || [] })
     }
-    fetchUser()
+
+    fetchData()
   }, [])
 
-  const fetchData = async (agentId) => {
-    const { data: biensData } = await supabase
-      .from("biens")
-      .select("*")
-      .eq("agent_id", agentId)
-
-    const { data: clientsData } = await supabase
-      .from("clients")
-      .select("*")
-      .eq("agent_id", agentId)
-
-    setBiens(biensData || [])
-    setClients(clientsData || [])
-
-    // Calcul CA mensuel uniquement sur biens vendus
-    const ventes = (biensData || []).filter(b => b.vendu && b.honoraires)
-    const parMois = {}
-
-    ventes.forEach(bien => {
-      const date = new Date(bien.updated_at || bien.created_at)
-      const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}`
-
-      parMois[key] = (parMois[key] || 0) + bien.honoraires
-    })
-
-    setCaMensuel(parMois)
-  }
-
-  const totalCA = biens
-    .filter(b => b.vendu && b.honoraires)
-    .reduce((sum, b) => sum + (b.honoraires || 0), 0)
-
-  const chartData = {
-    labels: Object.keys(caMensuel),
-    datasets: [
-      {
-        label: "Honoraires (€)",
-        data: Object.values(caMensuel),
-        backgroundColor: "#2563EB"
-      }
-    ]
-  }
+  const totalCA = biens.reduce((sum, bien) => {
+    if (bien.vendu && bien.honoraires) {
+      return sum + bien.honoraires
+    }
+    return sum
+  }, 0)
 
   return (
-    <div className="flex min-h-screen bg-gray-100 text-gray-800">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-xl p-4 flex flex-col space-y-6 fixed h-full">
-        <div className="text-2xl font-bold text-blue-600">LOGICIEL IMMO</div>
-        <nav className="flex flex-col space-y-2 mt-6">
-          <a href="/dashboard" className="hover:text-blue-600">🏠 Tableau de bord</a>
-          <a href="/clients" className="hover:text-blue-600">👥 Clients</a>
-          <a href="/biens" className="hover:text-blue-600">🏡 Biens</a>
-          <a href="/rapprochements" className="hover:text-blue-600">🔍 Rapprochements</a>
-          <a href="/statistiques" className="hover:text-blue-600">📊 Statistiques</a>
-        </nav>
-      </aside>
+    <div className="min-h-screen p-4 md:p-8 bg-gray-50">
+      <h1 className="text-3xl font-bold mb-6 text-orange-600">🏠 Tableau de bord</h1>
 
-      {/* Main */}
-      <main className="flex-1 p-8 ml-64">
-        <h1 className="text-3xl font-bold mb-6">Bienvenue {user?.email}</h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Biens */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h2 className="text-lg font-semibold mb-2">📦 Biens</h2>
-            <p className="text-3xl font-bold">{biens.length}</p>
-          </div>
-
-          {/* Clients */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h2 className="text-lg font-semibold mb-2">👥 Clients</h2>
-            <p className="text-3xl font-bold">{clients.length}</p>
-          </div>
-
-          {/* CA estimé */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h2 className="text-lg font-semibold mb-2">💰 Chiffre d’affaires estimé</h2>
-            <p className="text-2xl font-bold">{totalCA.toLocaleString()} €</p>
-          </div>
+      {/* Résumé activité */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-sm text-gray-500">📦 Mes biens</h2>
+          <p className="text-3xl font-bold">{biens.length}</p>
         </div>
 
-        {/* Graphique */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">📊 Évolution mensuelle des honoraires</h2>
-          {Object.keys(caMensuel).length > 0 ? (
-            <Bar data={chartData} />
-          ) : (
-            <p className="text-gray-500">Aucune vente enregistrée.</p>
-          )}
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-sm text-gray-500">👥 Mes clients</h2>
+          <p className="text-3xl font-bold">{clients.length}</p>
         </div>
-      </main>
+
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-sm text-gray-500">💰 CA (honoraires vendus)</h2>
+          <p className="text-2xl font-bold">{totalCA.toLocaleString()} €</p>
+        </div>
+      </div>
+
+      {/* Ajout rapide */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <Link href="/biens/ajouter" className="bg-orange-100 hover:bg-orange-200 p-6 rounded-xl shadow text-center">
+          ➕ Ajouter un bien
+        </Link>
+        <Link href="/clients" className="bg-blue-100 hover:bg-blue-200 p-6 rounded-xl shadow text-center">
+          ➕ Ajouter un client
+        </Link>
+      </div>
+
+      {/* Actualité du réseau */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Derniers biens */}
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-lg font-semibold mb-4 text-gray-700">🏡 Derniers biens ajoutés</h2>
+          {recents.biens.map((bien) => (
+            <div key={bien.id} className="border-b py-2">
+              <p className="font-semibold">{bien.titre} - {bien.ville}</p>
+              <p className="text-sm text-gray-500">{bien.prix?.toLocaleString()} €</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Derniers clients */}
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="text-lg font-semibold mb-4 text-gray-700">👥 Derniers clients ajoutés</h2>
+          {recents.clients.map((client) => (
+            <div key={client.id} className="border-b py-2">
+              <p className="font-semibold">{client.nom}</p>
+              <p className="text-sm text-gray-500">📍 {client.ville} — Budget max : {client.budget_max?.toLocaleString()} €</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

@@ -3,75 +3,59 @@ import { supabase } from "@/lib/supabaseClient"
 
 export default function Rapprochements() {
   const [clients, setClients] = useState([])
+  const [biens, setBiens] = useState([])
 
   useEffect(() => {
-    const fetchClients = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-
-      const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("agent_id", session.user.id)
-
-      if (!error) setClients(data)
+    const fetchData = async () => {
+      const { data: allClients } = await supabase.from("clients").select("*")
+      const { data: allBiens } = await supabase.from("biens").select("*").eq("disponible", true)
+      setClients(allClients || [])
+      setBiens(allBiens || [])
     }
-
-    fetchClients()
+    fetchData()
   }, [])
 
-  const rechercheBing = async (client) => {
-    const response = await fetch("/api/bing-search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(client)
-    })
-    const result = await response.json()
-    alert("🔍 Résultats Bing à afficher dans la console")
-    console.log("Bing Results :", result)
-  }
-
-  const rechercheInternes = async (client) => {
-    const { data: biens } = await supabase
-      .from("biens")
-      .select("*")
-      .eq("disponible", true)
-      .eq("ville", client.ville_recherche)
-
-    const matches = biens.filter(b =>
-      b.prix >= client.budget_min &&
-      b.prix <= client.budget_max &&
-      b.type_bien?.toLowerCase() === client.type_bien?.toLowerCase()
+  const filtrerBiensCompatibles = (client) => {
+    return biens.filter(
+      (bien) =>
+        bien.ville?.toLowerCase().trim() === client.ville?.toLowerCase().trim() &&
+        bien.prix <= client.budget_max
     )
-
-    console.log("🧠 Matching internes :", matches)
-    alert(`${matches.length} bien(s) correspondant(s) trouvé(s). Voir console.`)
   }
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">🔍 Rapprochement client ↔ biens</h1>
-      {clients.map((client) => (
-        <div key={client.id} className="bg-white rounded shadow p-4 mb-4">
-          <p className="font-semibold">{client.nom}</p>
-          <p className="text-sm text-gray-600">{client.ville_recherche} | {client.budget_min}€ - {client.budget_max}€ | {client.type_bien}</p>
+    <div className="ml-64 p-8 bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold mb-6">🔍 Rapprochements Clients ↔ Biens</h1>
 
-          <div className="mt-2 flex gap-2">
-            <button
-              onClick={() => rechercheInternes(client)}
-              className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
-            >
-              🏡 Biens internes
-            </button>
-            <button
-              onClick={() => rechercheBing(client)}
-              className="bg-green-600 text-white px-3 py-1 rounded text-sm"
-            >
-              🌐 Recherche Bing
-            </button>
+      {clients.map((client) => {
+        const correspondances = filtrerBiensCompatibles(client)
+
+        return (
+          <div key={client.id} className="bg-white shadow rounded-xl p-4 mb-6">
+            <h2 className="text-lg font-semibold text-orange-600 mb-2">
+              👤 {client.nom} — {client.ville} — Budget max : {client.budget_max.toLocaleString()} €
+            </h2>
+
+            {correspondances.length === 0 ? (
+              <p className="text-sm text-gray-500">❌ Aucun bien correspondant</p>
+            ) : (
+              <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {correspondances.map((bien) => (
+                  <li key={bien.id} className="border p-3 rounded-lg bg-gray-50">
+                    <p className="font-semibold">{bien.titre}</p>
+                    <p className="text-sm text-gray-600">📍 {bien.ville}</p>
+                    <p className="text-sm text-gray-600">
+                      💰 {bien.prix.toLocaleString()} € — {bien.surface_m2} m²
+                    </p>
+                    <p className="text-sm text-gray-500">🔋 DPE : {bien.dpe}</p>
+                    <p className="text-xs text-gray-400 mt-2">Agent ID : {bien.agent_id}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
