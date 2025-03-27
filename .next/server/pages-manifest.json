@@ -2,6 +2,11 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
+  "/clients": "pages/clients.js",
+  "/rapprochements": "pages/rapprochements.js",
+  "/dashboard": "pages/dashboard.js",
   "/reseau": "pages/reseau.js",
-  "/dashboard": "pages/dashboard.js"
+  "/biens": "pages/biens.js",
+  "/statistiques": "pages/statistiques.js",
+  "/parametres": "pages/parametres.js"
 }

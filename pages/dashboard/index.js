@@ -1,4 +1,4 @@
-// pages/dashboard.js
+// pages/dashboard/index.js
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 
@@ -27,18 +27,14 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-10">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">📊 Tableau de bord</h2>
-      </div>
+      <h2 className="text-2xl font-bold text-gray-800">📊 Tableau de bord</h2>
 
-      {/* Blocs de synthèse */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard label="Biens enregistrés" value={biens.length} icon="🏡" color="orange" />
         <StatCard label="Clients actifs" value={clients.length} icon="👥" color="blue" />
         <StatCard label="CA estimé" value={`${caEstime.toLocaleString()} €`} icon="💰" color="green" />
       </div>
 
-      {/* Bloc réseau / info */}
       <div className="bg-white shadow rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4 text-gray-700">📰 Actualités réseau</h3>
         <ul className="list-disc ml-6 space-y-1 text-sm text-gray-600">
