@@ -14,24 +14,37 @@ export default function FicheBien() {
     if (!id) return
 
     const fetchData = async () => {
+      console.log("🔍 ID du bien reçu :", id)
+
       const { data: sessionData } = await supabase.auth.getSession()
       const currentUserId = sessionData?.session?.user?.id
       setAgentId(currentUserId)
 
-      const { data: bienData, error } = await supabase.from("biens").select("*").eq("id", id).single()
+      const { data: bienData, error } = await supabase
+        .from("biens")
+        .select("*")
+        .eq("id", id)
+        .single()
+
+      if (error) {
+        console.error("❌ Erreur Supabase :", error)
+        return
+      }
 
       if (bienData && (!bienData.lat || !bienData.lng)) {
+        console.log("📍 Lancement géocodage...")
         const geo = await geocodeVille(bienData.ville)
         if (geo) {
           await supabase.from("biens").update({
             lat: geo.lat,
-            lng: geo.lng
+            lng: geo.lng,
           }).eq("id", bienData.id)
           bienData.lat = geo.lat
           bienData.lng = geo.lng
         }
       }
 
+      console.log("✅ Bien chargé :", bienData)
       setBien(bienData)
     }
 
@@ -46,27 +59,23 @@ export default function FicheBien() {
       const data = await response.json()
       if (data.results.length > 0) {
         const { lat, lng } = data.results[0].geometry.location
+        console.log("📍 Coordonnées géo :", lat, lng)
         return { lat, lng }
+      } else {
+        console.warn("⚠️ Aucun résultat géo pour :", ville)
       }
-    } catch (error) {
-      console.error("Erreur géocodage :", error)
+    } catch (err) {
+      console.error("❌ Erreur géocodage :", err)
     }
     return null
   }
 
-  if (!bien) return <p className="p-8">Chargement du bien...</p>
-
+  if (!bien) return <p className="p-8">⏳ Chargement du bien...</p>
   const isMine = agentId === bien.agent_id
-
-  const handlePDF = () => {
-    const url = `/api/generer-pdf?id=${bien.id}`
-    window.open(url, "_blank")
-  }
 
   return (
     <div className="p-8">
       <a href="/dashboard" className="text-sm text-orange-600 hover:underline">⬅️ Retour au Dashboard</a>
-
       <h1 className="text-3xl font-bold mt-4 mb-4">{bien.titre}</h1>
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -77,11 +86,8 @@ export default function FicheBien() {
           <p><strong>🔋 DPE :</strong> {bien.dpe}</p>
           <p><strong>💼 Honoraires :</strong> {bien.honoraires?.toLocaleString()} €</p>
           <p><strong>📅 Disponibilité :</strong> {bien.disponible ? "🟢 Disponible" : "🔴 Indisponible"}</p>
-          <p><strong>📦 Statut :</strong>
-            {bien.vendu ? "✅ Vendu" : bien.sous_compromis ? "📑 Sous compromis" : "🟢 En vente"}
-          </p>
+          <p><strong>📦 Statut :</strong> {bien.vendu ? "✅ Vendu" : bien.sous_compromis ? "📑 Sous compromis" : "🟢 En vente"}</p>
         </div>
-
         <div>
           <p className="text-sm text-gray-500 mb-2">📝 Description :</p>
           <div className="bg-white p-4 rounded shadow text-sm text-gray-700 whitespace-pre-wrap">{bien.description}</div>
@@ -95,23 +101,16 @@ export default function FicheBien() {
         </>
       )}
 
-      <div className="mt-6 flex flex-wrap gap-4">
-        {isMine && (
+      {isMine && (
+        <div className="mt-6">
           <a
             href={`/biens/modifier?id=${bien.id}`}
             className="inline-block px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition"
           >
             ✏️ Modifier ce bien
           </a>
-        )}
-
-        <button
-          onClick={handlePDF}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          📄 Générer PDF
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
