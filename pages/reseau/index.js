@@ -1,13 +1,13 @@
+// pages/reseau/index.js
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import Link from "next/link"
+import Image from "next/image"
 
 export default function Reseau() {
   const [utilisateurs, setUtilisateurs] = useState([])
-  const [filteredUsers, setFilteredUsers] = useState([])
+  const [filtered, setFiltered] = useState([])
   const [search, setSearch] = useState("")
-  const [selectedUser, setSelectedUser] = useState(null)
-  const [biens, setBiens] = useState([])
-  const [clients, setClients] = useState([])
 
   useEffect(() => {
     fetchUtilisateurs()
@@ -15,102 +15,67 @@ export default function Reseau() {
 
   const fetchUtilisateurs = async () => {
     const { data, error } = await supabase.from("utilisateurs").select("*")
-    if (!error) {
+    if (error) console.error("Erreur chargement utilisateurs :", error)
+    else {
       setUtilisateurs(data)
-      setFilteredUsers(data)
+      setFiltered(data)
     }
   }
 
-  const voirDetails = async (userId) => {
-    setSelectedUser(userId)
-
-    const { data: biensData } = await supabase.from("biens").select("*").eq("agent_id", userId)
-    const { data: clientsData } = await supabase.from("clients").select("*").eq("agent_id", userId)
-
-    setBiens(biensData || [])
-    setClients(clientsData || [])
-  }
-
   const handleSearch = (e) => {
-    const value = e.target.value.toLowerCase()
-    setSearch(value)
-    const filtered = utilisateurs.filter((u) =>
-      u.nom?.toLowerCase().includes(value) || u.ville?.toLowerCase().includes(value)
+    const val = e.target.value.toLowerCase()
+    setSearch(val)
+    setFiltered(
+      utilisateurs.filter(
+        (u) =>
+          u.nom?.toLowerCase().includes(val) ||
+          u.ville?.toLowerCase().includes(val)
+      )
     )
-    setFilteredUsers(filtered)
   }
 
   return (
-    <div className="space-y-10">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-orange-700">🌐 Mon réseau</h1>
-      </div>
-
-      {/* Recherche */}
-      <div className="flex gap-4 items-center">
+    <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-orange-600">🌐 Mon réseau</h1>
         <input
           type="text"
-          placeholder="🔍 Rechercher un agent par nom ou ville..."
           value={search}
           onChange={handleSearch}
-          className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-sm"
+          placeholder="🔍 Recherche agent ou ville..."
+          className="border px-3 py-2 rounded-md text-sm shadow-sm"
         />
       </div>
 
-      {/* Liste agents */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredUsers.map((user) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filtered.length === 0 && (
+          <p className="text-sm text-gray-500">Aucun agent trouvé.</p>
+        )}
+        {filtered.map((agent) => (
           <div
-            key={user.id}
-            className={`rounded-xl shadow border p-4 bg-white hover:shadow-lg transition ${
-              selectedUser === user.id ? "border-orange-500" : "border-gray-100"
-            }`}
+            key={agent.id}
+            className="bg-white rounded-xl shadow p-4 flex flex-col items-center text-center border"
           >
-            <h2 className="font-semibold text-lg text-gray-800">{user.nom || "Agent"}</h2>
-            <p className="text-sm text-gray-600">{user.email}</p>
-            <p className="text-sm text-gray-500 mb-2">📍 {user.ville || "Ville inconnue"}</p>
-            <button
-              className="text-sm text-orange-600 hover:underline"
-              onClick={() => voirDetails(user.id)}
+            <Image
+              src={agent.photo_url || "/avatar.png"}
+              alt={agent.nom}
+              width={80}
+              height={80}
+              className="rounded-full shadow mb-3"
+            />
+            <p className="font-semibold text-gray-800">{agent.nom}</p>
+            <p className="text-sm text-gray-500">{agent.email}</p>
+            <p className="text-sm text-gray-400">📍 {agent.ville || "Ville inconnue"}</p>
+
+            <Link
+              href={`/reseau/${agent.slug}`}
+              className="mt-3 text-sm text-orange-600 hover:underline"
             >
-              ➕ Voir ses biens & clients
-            </button>
+              🔍 Voir sa fiche
+            </Link>
           </div>
         ))}
       </div>
-
-      {/* Détail agent */}
-      {selectedUser && (
-        <div className="bg-white rounded-xl shadow p-6 border border-orange-100 space-y-6">
-          <h2 className="text-xl font-bold text-gray-800">📁 Détails de l’agent</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-md font-semibold text-orange-600 mb-2">🏡 Biens</h3>
-              {biens.length === 0 ? (
-                <p className="text-sm text-gray-500">Aucun bien trouvé</p>
-              ) : (
-                <ul className="text-sm space-y-1">
-                  {biens.map((b) => (
-                    <li key={b.id}>• {b.titre} à {b.ville} — {b.prix?.toLocaleString()} €</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div>
-              <h3 className="text-md font-semibold text-orange-600 mb-2">👤 Clients</h3>
-              {clients.length === 0 ? (
-                <p className="text-sm text-gray-500">Aucun client enregistré</p>
-              ) : (
-                <ul className="text-sm space-y-1">
-                  {clients.map((c) => (
-                    <li key={c.id}>• {c.nom} — {c.ville} ({c.budget_min}€ à {c.budget_max}€)</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

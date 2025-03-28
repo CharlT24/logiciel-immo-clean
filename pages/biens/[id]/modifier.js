@@ -1,3 +1,4 @@
+// pages/biens/[id]/modifier.js
 import { useRouter } from "next/router"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
@@ -5,114 +6,111 @@ import { supabase } from "@/lib/supabaseClient"
 export default function ModifierBien() {
   const router = useRouter()
   const { id } = router.query
-  const [form, setForm] = useState({
-    titre: "",
-    ville: "",
-    prix: "",
-    surface_m2: "",
-    dpe: "",
-    description: "",
-    disponible: true,
-    sous_compromis: false,
-    vendu: false,
-    export_leboncoin: false,
-    export_seloger: false,
-  })
 
-  const [imageUrl, setImageUrl] = useState("")
+  const [bien, setBien] = useState(null)
+  const [formData, setFormData] = useState({})
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!id) return
+
     const fetchBien = async () => {
-      const { data } = await supabase.from("biens").select("*").eq("id", id).single()
-      if (data) {
-        setForm(data)
-        const { data: img } = supabase.storage
-          .from("photos-biens")
-          .getPublicUrl(`${data.id}/main.jpg`)
-        setImageUrl(img?.publicUrl || "")
-      }
+      const { data, error } = await supabase.from("biens").select("*").eq("id", id).single()
+      if (error) console.error("❌ Erreur :", error)
+      setBien(data)
+      setFormData(data)
+      setLoading(false)
     }
+
     fetchBien()
   }, [id])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value })
-  }
-
-  const handleImageUpload = async (file) => {
-    const fileName = `${id}/main.jpg`
-    const { error } = await supabase.storage
-      .from("photos-biens")
-      .upload(fileName, file, { upsert: true })
-
-    if (!error) {
-      const { data } = supabase.storage
-        .from("photos-biens")
-        .getPublicUrl(fileName)
-      setImageUrl(data?.publicUrl)
-    }
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? checked : value,
+    })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const { error } = await supabase
-      .from("biens")
-      .update({
-        ...form,
-        prix: Number(form.prix),
-        surface_m2: Number(form.surface_m2),
-      })
-      .eq("id", id)
-
+    const { error } = await supabase.from("biens").update(formData).eq("id", id)
     if (error) {
-      alert("❌ Erreur mise à jour")
-      console.error(error)
+      console.error("❌ Erreur mise à jour :", error)
+      alert("Erreur lors de la mise à jour.")
     } else {
-      const file = document.querySelector("#photo-upload")?.files?.[0]
-      if (file) await handleImageUpload(file)
-      alert("✅ Bien modifié")
-      router.push("/biens")
+      alert("✅ Bien modifié avec succès")
+      router.push(`/biens/${id}`)
     }
   }
 
-  if (!form.titre) return <div className="p-8">Chargement...</div>
+  if (loading) return <p className="p-8 text-gray-600">Chargement du bien...</p>
+  if (!bien) return <p className="p-8 text-red-500">Bien introuvable</p>
 
   return (
-    <div className="p-8 max-w-2xl mx-auto bg-white rounded shadow mt-8 space-y-4">
-      <h1 className="text-2xl font-bold">✏️ Modifier un bien</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input name="titre" value={form.titre} onChange={handleChange} placeholder="Titre" className="w-full p-2 border rounded" />
-        <input name="ville" value={form.ville} onChange={handleChange} placeholder="Ville" className="w-full p-2 border rounded" />
-        <input type="number" name="prix" value={form.prix} onChange={handleChange} placeholder="Prix (€)" className="w-full p-2 border rounded" />
-        <input type="number" name="surface_m2" value={form.surface_m2} onChange={handleChange} placeholder="Surface (m²)" className="w-full p-2 border rounded" />
-        <input name="dpe" value={form.dpe} onChange={handleChange} placeholder="DPE" className="w-full p-2 border rounded" />
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={handleChange}
-          placeholder="Description complète"
-          rows="4"
-          className="w-full p-2 border rounded"
-        />
-        {imageUrl && <img src={imageUrl} alt="Photo" className="w-full rounded shadow" />}
-        <input id="photo-upload" type="file" accept="image/*" className="block mt-2" />
+    <div className="p-8 max-w-2xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold text-orange-700 mb-6">✏️ Modifier le bien</h1>
 
-        <div className="flex flex-col gap-2">
-          <label><input type="checkbox" name="disponible" checked={form.disponible} onChange={handleChange} /> Disponible</label>
-          <label><input type="checkbox" name="sous_compromis" checked={form.sous_compromis} onChange={handleChange} /> Sous compromis</label>
-          <label><input type="checkbox" name="vendu" checked={form.vendu} onChange={handleChange} /> Vendu</label>
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-6 space-y-4">
+
+        <Input label="Titre" name="titre" value={formData.titre} onChange={handleChange} />
+        <Input label="Ville" name="ville" value={formData.ville} onChange={handleChange} />
+        <Input label="Surface (m²)" name="surface_m2" type="number" value={formData.surface_m2} onChange={handleChange} />
+        <Input label="Prix (€)" name="prix" type="number" value={formData.prix} onChange={handleChange} />
+        <Input label="DPE" name="dpe" value={formData.dpe} onChange={handleChange} />
+        <Input label="Honoraires (€)" name="honoraires" type="number" value={formData.honoraires} onChange={handleChange} />
+
+        <div>
+          <label className="block text-sm font-medium mb-1 text-gray-700">Description</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2"
+            rows="4"
+          />
         </div>
 
-        <div className="border-t pt-4 mt-4">
-          <p className="font-semibold mb-2">🌐 Export :</p>
-          <label><input type="checkbox" name="export_leboncoin" checked={form.export_leboncoin} onChange={handleChange} /> LeBonCoin</label><br />
-          <label><input type="checkbox" name="export_seloger" checked={form.export_seloger} onChange={handleChange} /> SeLoger</label>
-        </div>
+        {/* Checkboxes */}
+        <Checkbox label="Disponible" name="disponible" checked={formData.disponible} onChange={handleChange} />
+        <Checkbox label="Sous compromis" name="sous_compromis" checked={formData.sous_compromis} onChange={handleChange} />
+        <Checkbox label="Vendu" name="vendu" checked={formData.vendu} onChange={handleChange} />
+        <Checkbox label="Exporter sur LeBonCoin" name="export_leboncoin" checked={formData.export_leboncoin} onChange={handleChange} />
+        <Checkbox label="Exporter sur SeLoger" name="export_seloger" checked={formData.export_seloger} onChange={handleChange} />
 
-        <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">💾 Enregistrer</button>
+        <button
+          type="submit"
+          className="bg-orange-600 text-white font-semibold px-6 py-2 rounded hover:bg-orange-700"
+        >
+          💾 Enregistrer
+        </button>
       </form>
+    </div>
+  )
+}
+
+function Input({ label, name, value, onChange, type = "text" }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1 text-gray-700">{label}</label>
+      <input
+        type={type}
+        name={name}
+        value={value || ""}
+        onChange={onChange}
+        className="w-full border rounded px-3 py-2"
+        required
+      />
+    </div>
+  )
+}
+
+function Checkbox({ label, name, checked, onChange }) {
+  return (
+    <div className="flex items-center space-x-2">
+      <input type="checkbox" name={name} checked={checked || false} onChange={onChange} />
+      <label className="text-sm text-gray-700">{label}</label>
     </div>
   )
 }

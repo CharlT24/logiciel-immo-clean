@@ -1,18 +1,67 @@
 // components/Layout.js
 import Link from "next/link"
 import Image from "next/image"
+import { supabase } from "@/lib/supabaseClient"
+import { useEffect, useState } from "react"
 
 export default function Layout({ children }) {
+  const [role, setRole] = useState(null)
+  const [userId, setUserId] = useState(null)
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      const session = await supabase.auth.getSession()
+      const id = session?.data?.session?.user?.id
+
+      if (!id) return
+
+      setUserId(id)
+
+      const { data: userData } = await supabase
+        .from("utilisateurs")
+        .select("role")
+        .eq("id", id)
+        .single()
+
+      if (userData?.role) {
+        setRole(userData.role)
+      }
+    }
+
+    fetchRole()
+  }, [])
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 font-sans">
-
       {/* TOPBAR */}
       <header className="bg-white shadow-md px-6 py-4 flex items-center justify-between sticky top-0 z-50 border-b">
         <div className="flex items-center gap-3">
           <Image src="/logo.png" alt="Logo" width={36} height={36} />
           <h1 className="text-xl font-bold text-orange-600 tracking-tight">Open Immobilier</h1>
         </div>
-        <div className="text-sm text-gray-600">👤 Compte connecté</div>
+
+        <div className="text-sm text-right text-gray-600 space-y-1">
+          <p>👤 Compte connecté</p>
+
+          {role === "admin" && (
+            <Link
+              href="/admin/utilisateurs"
+              className="text-orange-600 text-xs underline block"
+            >
+              ⚙️ Admin
+            </Link>
+          )}
+
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut()
+              window.location.href = "/login"
+            }}
+            className="text-xs text-red-500 underline mt-1"
+          >
+            🚪 Déconnexion
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-1">
@@ -26,7 +75,6 @@ export default function Layout({ children }) {
             <NavItem href="/rapprochements" icon="🔍" label="Rapprochements" />
             <NavItem href="/statistiques" icon="📊" label="Statistiques" />
             <NavItem href="/parametres" icon="⚙️" label="Paramètres" />
-            <NavItem href="/mentions-legales" icon="📜" label="Mentions légales" />
           </nav>
         </aside>
 
