@@ -1,136 +1,56 @@
-import { useState, useEffect } from "react"
+// pages/biens/ajouter.js
+import Link from "next/link"
+import { useEffect } from "react"
 import { useRouter } from "next/router"
-import { supabase } from "@/lib/supabaseClient"
 
-export default function AjouterBien() {
-  const [form, setForm] = useState({
-    titre: "",
-    ville: "",
-    prix: "",
-    surface_m2: "",
-    dpe: "",
-    honoraires: "",
-    description: "",
-    disponible: true,
-    sous_compromis: false,
-    vendu: false,
-    export_leboncoin: false,
-    export_seloger: false,
-  })
-
-  const [agentId, setAgentId] = useState(null)
+export default function AjouterBienAccueil() {
   const router = useRouter()
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setAgentId(session.user.id)
-      } else {
-        router.push("/login")
-      }
+    // Si un brouillon existe, on peut le reprendre
+    const draft = localStorage.getItem("ajoutBien")
+    if (draft) {
+      console.log("🔄 Brouillon trouvé : bien en cours d'ajout")
     }
-    getSession()
   }, [])
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value })
-  }
-
-  const handleImageUpload = async (file, bienId) => {
-    const filePath = `${bienId}/main.jpg`
-    const { error } = await supabase.storage
-      .from("photos-biens")
-      .upload(filePath, file, { upsert: true })
-
-    if (error) {
-      console.error("❌ Erreur upload image :", error)
-    } else {
-      console.log("✅ Image uploadée")
-    }
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    if (!agentId) {
-      alert("Utilisateur non connecté.")
-      return
-    }
-
-    const bienData = {
-      ...form,
-      agent_id: agentId,
-      prix: Number(form.prix),
-      surface_m2: Number(form.surface_m2),
-      honoraires: Number(form.honoraires),
-    }
-
-    console.log("📤 Données envoyées à Supabase :", bienData)
-
-    const { error: insertError } = await supabase.from("biens").insert([bienData])
-
-    if (insertError) {
-      console.error("❌ Erreur Supabase :", insertError)
-      alert("❌ Erreur à l’insertion")
-      return
-    }
-
-    // 🔍 Récupérer le dernier bien créé pour cet agent
-    const { data: derniersBiens, error: fetchError } = await supabase
-      .from("biens")
-      .select("id")
-      .eq("agent_id", agentId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-
-    if (fetchError || !derniersBiens || derniersBiens.length === 0) {
-      console.warn("⚠️ Bien ajouté mais ID non trouvé pour upload image.")
-      alert("✅ Bien ajouté (image non liée)")
-      router.push("/biens")
-      return
-    }
-
-    const bienId = derniersBiens[0].id
-    const file = document.querySelector("#photo-upload")?.files?.[0]
-    if (file && bienId) await handleImageUpload(file, bienId)
-
-    alert("✅ Bien ajouté avec succès")
-    router.push("/biens")
-  }
-
   return (
-    <div className="max-w-2xl mx-auto p-6 mt-8 bg-white rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">➕ Ajouter un bien</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input name="titre" value={form.titre} onChange={handleChange} placeholder="Titre" required className="w-full p-2 border rounded" />
-        <input name="ville" value={form.ville} onChange={handleChange} placeholder="Ville" required className="w-full p-2 border rounded" />
-        <input type="number" name="prix" value={form.prix} onChange={handleChange} placeholder="Prix (€)" required className="w-full p-2 border rounded" />
-        <input type="number" name="surface_m2" value={form.surface_m2} onChange={handleChange} placeholder="Surface (m²)" required className="w-full p-2 border rounded" />
-        <input name="dpe" value={form.dpe} onChange={handleChange} placeholder="DPE" className="w-full p-2 border rounded" />
-        <input type="number" name="honoraires" value={form.honoraires} onChange={handleChange} placeholder="Honoraires (€)" required className="w-full p-2 border rounded" />
+    <div className="space-y-8">
+      <h1 className="text-2xl font-bold text-orange-600">➕ Ajouter un nouveau bien</h1>
 
-        <textarea name="description" value={form.description} onChange={handleChange} placeholder="Description (optionnelle)" rows="4" className="w-full p-2 border rounded" />
+      <p className="text-gray-600">
+        Suivez les étapes pour créer un bien complet dans votre base. Vous pouvez enregistrer votre progression à chaque étape.
+      </p>
 
-        <input id="photo-upload" type="file" accept="image/*" className="block mt-2" />
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <EtapeCard numero={1} titre="🏡 Informations principales" description="Titre, ville, type de bien, surface, etc." />
+        <EtapeCard numero={2} titre="📍 Localisation" description="Adresse précise, géolocalisation, étage, etc." />
+        <EtapeCard numero={3} titre="🛏️ Détails & prestations" description="Nombre de pièces, équipements, DPE..." />
+        <EtapeCard numero={4} titre="📷 Média & photos" description="Ajoutez une photo principale et galerie." />
+        <EtapeCard numero={5} titre="✅ Finalisation" description="Disponibilité, honoraires, publication." />
+      </div>
 
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <label><input type="checkbox" name="disponible" checked={form.disponible} onChange={handleChange} /> Disponible</label>
-          <label><input type="checkbox" name="sous_compromis" checked={form.sous_compromis} onChange={handleChange} /> Sous compromis</label>
-          <label><input type="checkbox" name="vendu" checked={form.vendu} onChange={handleChange} /> Vendu</label>
-        </div>
-
-        <div className="border-t pt-4 mt-4">
-          <p className="font-semibold mb-2">🌐 Export :</p>
-          <label><input type="checkbox" name="export_leboncoin" checked={form.export_leboncoin} onChange={handleChange} /> LeBonCoin</label><br />
-          <label><input type="checkbox" name="export_seloger" checked={form.export_seloger} onChange={handleChange} /> SeLoger</label>
-        </div>
-
-        <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-4">
-          💾 Enregistrer le bien
+      <div className="mt-10">
+        <button
+          onClick={() => router.push("/biens")}
+          className="text-sm text-orange-600 hover:underline"
+        >
+          ⬅️ Retour aux biens
         </button>
-      </form>
+      </div>
     </div>
+  )
+}
+
+function EtapeCard({ numero, titre, description }) {
+  return (
+    <Link
+      href={`/biens/ajouter/etape${numero}`}
+      className="bg-white border border-orange-100 rounded-xl p-6 shadow-sm hover:shadow-md transition block"
+    >
+      <h2 className="text-lg font-semibold text-orange-700 mb-2">Étape {numero}</h2>
+      <p className="text-md font-medium mb-1">{titre}</p>
+      <p className="text-sm text-gray-500">{description}</p>
+    </Link>
   )
 }

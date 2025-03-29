@@ -1,38 +1,48 @@
-// components/Layout.js
 import Link from "next/link"
 import Image from "next/image"
-import { supabase } from "@/lib/supabaseClient"
+import { useRouter } from "next/router"
 import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function Layout({ children }) {
-  const [role, setRole] = useState(null)
-  const [userId, setUserId] = useState(null)
+  const router = useRouter()
+  const [user, setUser] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  const pagesSansSidebar = ["/login", "/register"]
 
   useEffect(() => {
-    const fetchRole = async () => {
-      const session = await supabase.auth.getSession()
-      const id = session?.data?.session?.user?.id
+    const fetchUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setUser(session.user)
+        const { data: userData } = await supabase
+          .from("utilisateurs")
+          .select("role")
+          .eq("id", session.user.id)
+          .single()
 
-      if (!id) return
-
-      setUserId(id)
-
-      const { data: userData } = await supabase
-        .from("utilisateurs")
-        .select("role")
-        .eq("id", id)
-        .single()
-
-      if (userData?.role) {
-        setRole(userData.role)
+        if (userData?.role === "admin") {
+          setIsAdmin(true)
+        }
       }
     }
-
-    fetchRole()
+    fetchUser()
   }, [])
+
+  // Cacher tout le layout sur certaines pages
+  if (pagesSansSidebar.includes(router.pathname)) {
+    return <main>{children}</main>
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 font-sans">
+
       {/* TOPBAR */}
       <header className="bg-white shadow-md px-6 py-4 flex items-center justify-between sticky top-0 z-50 border-b">
         <div className="flex items-center gap-3">
@@ -40,26 +50,17 @@ export default function Layout({ children }) {
           <h1 className="text-xl font-bold text-orange-600 tracking-tight">Open Immobilier</h1>
         </div>
 
-        <div className="text-sm text-right text-gray-600 space-y-1">
-          <p>👤 Compte connecté</p>
-
-          {role === "admin" && (
-            <Link
-              href="/admin/utilisateurs"
-              className="text-orange-600 text-xs underline block"
-            >
-              ⚙️ Admin
-            </Link>
+        {/* Compte connecté + actions */}
+        <div className="text-sm text-gray-600 flex flex-col items-end">
+          <span>👤 Compte connecté</span>
+          {isAdmin && (
+            <Link href="/admin/utilisateurs" className="text-orange-600 hover:underline text-xs">⚙️ Accès admin</Link>
           )}
-
           <button
-            onClick={async () => {
-              await supabase.auth.signOut()
-              window.location.href = "/login"
-            }}
-            className="text-xs text-red-500 underline mt-1"
+            onClick={handleLogout}
+            className="text-orange-500 text-xs hover:underline mt-1"
           >
-            🚪 Déconnexion
+            🔓 Déconnexion
           </button>
         </div>
       </header>
