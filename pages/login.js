@@ -66,6 +66,16 @@ export default function LoginPage() {
           className="w-full bg-orange-600 text-white py-2 rounded hover:bg-orange-700 transition"
         >
           Se connecter
+          <p className="text-center text-sm mt-4">
+  Vous n’avez pas de compte ?{" "}
+  <span
+    onClick={() => router.push("/register")}
+    className="text-orange-500 hover:underline cursor-pointer"
+  >
+    Créer un compte agent
+  </span>
+</p>
+
         </button>
       </form>
     </div>

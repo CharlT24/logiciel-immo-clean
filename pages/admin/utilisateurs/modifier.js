@@ -1,94 +1,81 @@
-import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
+import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 
 export default function ModifierUtilisateur() {
   const router = useRouter()
   const { id } = router.query
-
-  const [formData, setFormData] = useState({
-    nom: "",
-    prenom: "",
-    telephone: "",
-    email_contact: "",
-    url_bareme: "",
-    pays: "",
-    ville: "",
-    code_postal: "",
-    adresse: "",
-    siret: "",
-    rsac: "",
-  })
+  const [userData, setUserData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    if (id) fetchUtilisateur(id)
+    if (id) {
+      fetchUser()
+    }
   }, [id])
 
-  const fetchUtilisateur = async (userId) => {
-    const { data, error } = await supabase.from("utilisateurs").select("*").eq("id", userId).single()
-    if (error) console.error("Erreur :", error)
-    if (data) setFormData({ ...formData, ...data })
+  const fetchUser = async () => {
+    const { data, error } = await supabase.from("utilisateurs").select("*").eq("id", id).single()
+    if (error) {
+      console.error("Erreur chargement utilisateur", error)
+    } else {
+      setUserData(data)
+    }
+    setLoading(false)
   }
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setUserData({ ...userData, [e.target.name]: e.target.value })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const { error } = await supabase.from("utilisateurs").update(formData).eq("id", id)
+    const { error } = await supabase
+      .from("utilisateurs")
+      .update({
+        nom: userData.nom,
+        prenom: userData.prenom,
+        email: userData.email,
+        role: userData.role,
+        ville: userData.ville,
+        agence: userData.agence,
+      })
+      .eq("id", id)
 
     if (error) {
-      console.error("Erreur mise à jour :", error)
-      alert("❌ Erreur lors de la modification")
+      alert("Erreur lors de la mise à jour")
     } else {
-      alert("✅ Utilisateur mis à jour")
-      router.push("/admin/utilisateurs")
+      setSuccess(true)
+      setTimeout(() => router.push("/admin/utilisateur"), 1000)
     }
   }
 
+  if (loading) return <p className="p-6">Chargement...</p>
+  if (!userData) return <p className="p-6 text-red-500">Utilisateur introuvable.</p>
+
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow rounded-xl p-8 mt-8">
-      <h1 className="text-2xl font-bold text-orange-700 mb-6">👤 Modifier un utilisateur</h1>
+    <div className="max-w-xl mx-auto p-6 bg-white shadow rounded space-y-6">
+      <h1 className="text-2xl font-bold text-orange-600">✏️ Modifier un utilisateur</h1>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-700">
-        <Input label="Nom" name="nom" value={formData.nom} onChange={handleChange} />
-        <Input label="Prénom" name="prenom" value={formData.prenom} onChange={handleChange} />
-        <Input label="Téléphone" name="telephone" value={formData.telephone} onChange={handleChange} />
-        <Input label="Email de contact" name="email_contact" value={formData.email_contact} onChange={handleChange} />
-        <Input label="URL barème honoraires" name="url_bareme" value={formData.url_bareme} onChange={handleChange} />
-        <Input label="Pays" name="pays" value={formData.pays} onChange={handleChange} />
-        <Input label="Ville" name="ville" value={formData.ville} onChange={handleChange} />
-        <Input label="Code postal" name="code_postal" value={formData.code_postal} onChange={handleChange} />
-        <Input label="Adresse" name="adresse" value={formData.adresse} onChange={handleChange} />
-        <Input label="SIRET" name="siret" value={formData.siret} onChange={handleChange} />
-        <Input label="Numéro RSAC" name="rsac" value={formData.rsac} onChange={handleChange} />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input name="nom" value={userData.nom || ""} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Nom" />
+        <input name="prenom" value={userData.prenom || ""} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Prénom" />
+        <input name="email" value={userData.email || ""} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Email" />
+        <input name="ville" value={userData.ville || ""} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Ville" />
+        <input name="agence" value={userData.agence || ""} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Agence" />
 
-        <div className="col-span-full mt-4">
-          <button
-            type="submit"
-            className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded shadow"
-          >
-            💾 Sauvegarder
-          </button>
-        </div>
+        <select name="role" value={userData.role || ""} onChange={handleChange} className="w-full border p-2 rounded">
+          <option value="agent">Agent</option>
+          <option value="admin">Admin</option>
+        </select>
+
+        <button type="submit" className="bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600">
+          💾 Enregistrer
+        </button>
       </form>
-    </div>
-  )
-}
 
-function Input({ label, name, value, onChange }) {
-  return (
-    <div className="flex flex-col">
-      <label htmlFor={name} className="mb-1 font-medium">{label}</label>
-      <input
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="border border-gray-300 rounded px-3 py-2"
-      />
+      {success && <p className="text-green-600">✅ Modifications enregistrées !</p>}
     </div>
   )
 }
