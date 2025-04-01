@@ -59,6 +59,10 @@ export default function Biens() {
                 <Link href={`/biens/${bien.id}`} className="text-sm text-orange-600 underline">
                   🔎 Voir la fiche
                 </Link>
+                <Link href={`/biens/${bien.id}/modifier`} className="text-sm text-blue-500 hover:underline flex items-center gap-1">
+  ✏️ <span>Modifier</span>
+</Link>
+
 
                 <button
                   onClick={() => supprimerBien(bien.id)}

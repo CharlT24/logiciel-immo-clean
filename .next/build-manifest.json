@@ -22,20 +22,20 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/admin": [
+    "/biens": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/admin.js"
+      "static/chunks/pages/biens.js"
     ],
-    "/clients": [
+    "/biens/[id]/modifier": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/clients.js"
+      "static/chunks/pages/biens/[id]/modifier.js"
     ],
-    "/dashboard": [
+    "/biens/ajouter/etape2": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/dashboard.js"
+      "static/chunks/pages/biens/ajouter/etape2.js"
     ]
   },
   "ampFirstPages": []
