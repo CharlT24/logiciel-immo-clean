@@ -32,6 +32,7 @@ export default function MainNavbar() {
         <button onClick={() => router.push("/dashboard")} className="hover:underline">🏠 Dashboard</button>
         <button onClick={() => router.push("/clients")} className="hover:underline">👥 Clients</button>
         <button onClick={() => router.push("/biens")} className="hover:underline">🏡 Biens</button>
+        <button onClick={() => router.push("/rapprochement")} className="hover:underline">🔗 Rapprochement</button>
         <button onClick={() => window.open("https://www.a2sformation.fr", "_blank")} className="hover:underline">🎓 Formation</button>
         {isAdmin && <button onClick={() => router.push("/crypto")} className="hover:underline">₿ Crypto</button>}
       </div>

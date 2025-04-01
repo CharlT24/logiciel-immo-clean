@@ -1,61 +1,80 @@
+import { useSession, signIn, signOut } from "next-auth/react"
 import { useEffect, useState } from "react"
-import { useRouter } from "next/router"
 
 export default function Agenda() {
-  const [connected, setConnected] = useState(false)
-  const [provider, setProvider] = useState(null)
-  const router = useRouter()
+  const { data: session } = useSession()
+  const [vacation, setVacation] = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Check if redirected back from OAuth
-    const url = new URL(window.location.href)
-    const code = url.searchParams.get("code")
-    const state = url.searchParams.get("state")
+    if (session?.accessToken) fetchVacationSettings()
+  }, [session])
 
-    if (code && state) {
-      setConnected(true)
-      setProvider(state)
-      // Tu pourras ici appeler ton backend pour échanger le code contre un token
+  const fetchVacationSettings = async () => {
+    try {
+      const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/settings/vacation", {
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`
+        }
+      })
+
+      if (!res.ok) throw new Error("Erreur API Gmail")
+
+      const data = await res.json()
+      setVacation(data)
+    } catch (err) {
+      console.error("❌", err)
+      setError("Erreur lors de la récupération des paramètres Gmail.")
     }
-  }, [])
-
-  const connectGoogle = () => {
-    const client_id = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    const redirect_uri = process.env.NEXT_PUBLIC_BASE_URL + "/agenda"
-    const scope = "https://www.googleapis.com/auth/calendar.readonly"
-    const auth_url = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${client_id}&redirect_uri=${redirect_uri}&scope=${scope}&access_type=offline&prompt=consent&state=google`
-    window.location.href = auth_url
   }
 
-  const connectOutlook = () => {
-    const client_id = process.env.NEXT_PUBLIC_OUTLOOK_CLIENT_ID
-    const redirect_uri = process.env.NEXT_PUBLIC_BASE_URL + "/agenda"
-    const scope = "Calendars.Read"
-    const auth_url = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${client_id}&response_type=code&redirect_uri=${redirect_uri}&response_mode=query&scope=${scope}&state=outlook`
-    window.location.href = auth_url
+  const handleOutlookLogin = () => {
+    alert("🔧 Connexion Outlook à intégrer (Microsoft Graph API)")
+    // Plus tard : Intégrer MSAL.js pour authentification Microsoft
+    // https://learn.microsoft.com/en-us/azure/active-directory/develop/tutorial-v2-javascript-spa
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">📅 Agenda connecté</h1>
+    <div className="max-w-2xl mx-auto p-8 bg-white rounded-xl shadow mt-10 space-y-6">
+      <h1 className="text-2xl font-bold text-orange-600">📅 Mon Agenda / Gmail</h1>
 
-      {!connected && (
+      {!session && (
         <div className="space-y-4">
-          <button onClick={connectGoogle} className="bg-red-500 text-white px-5 py-3 rounded hover:bg-red-600 transition w-full">
-            🔗 Se connecter avec Google
-          </button>
-          <button onClick={connectOutlook} className="bg-blue-600 text-white px-5 py-3 rounded hover:bg-blue-700 transition w-full">
-            🔗 Se connecter avec Outlook
-          </button>
+          <p className="text-gray-600">Connecte-toi pour synchroniser ton agenda</p>
+
+          <button
+            onClick={() => signIn("google")}
+            className="bg-orange-600 text-white px-6 py-2 rounded hover:bg-orange-700 block"
+          >🔐 Connexion Google</button>
+
+          <button
+            onClick={handleOutlookLogin}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 block"
+          >🔷 Connexion Outlook</button>
         </div>
       )}
 
-      {connected && (
-        <div className="mt-6">
-          <p className="text-green-600 font-semibold text-lg">
-            ✅ Connecté avec {provider === "google" ? "Google Calendar" : "Outlook"} !
-          </p>
-          <p className="text-gray-600 mt-2">Les événements seront affichés ici prochainement.</p>
+      {session && (
+        <div className="space-y-4">
+          <p className="text-gray-600">Connecté en tant que : <strong>{session.user.email}</strong></p>
+          <button
+            onClick={() => signOut()}
+            className="text-red-500 text-sm hover:underline"
+          >🚪 Se déconnecter</button>
+
+          <hr />
+
+          <h2 className="text-lg font-semibold">🛎️ Réponse automatique Gmail</h2>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {vacation ? (
+            <div className="bg-orange-50 p-4 rounded space-y-2 text-sm">
+              <p><strong>Activée :</strong> {vacation.enable ? "Oui" : "Non"}</p>
+              <p><strong>Objet :</strong> {vacation.subject || "-"}</p>
+              <p><strong>Message :</strong> {vacation.responseBodyPlainText || "-"}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">Chargement des données Gmail...</p>
+          )}
         </div>
       )}
     </div>

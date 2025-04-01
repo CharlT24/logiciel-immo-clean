@@ -1,9 +1,8 @@
-// pages/login.js
 import { useState } from "react"
-import { supabase } from "@/lib/supabaseClient"
 import { useRouter } from "next/router"
+import { supabase } from "@/lib/supabaseClient"
 
-export default function LoginPage() {
+export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -11,45 +10,56 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault()
+    setError("")
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-    if (error) {
-      setError("❌ Identifiants incorrects")
+    if (authError) {
+      setError("Email ou mot de passe incorrect.")
       return
     }
 
     const user = data.user
-    if (!user) return
+    if (!user) {
+      setError("Utilisateur introuvable.")
+      return
+    }
 
-    // 🧠 Récupérer le rôle
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("utilisateurs")
       .select("role")
       .eq("id", user.id)
       .single()
 
-    if (profile?.role) {
-      localStorage.setItem("role", profile.role)
+    if (profileError) {
+      setError("Impossible de récupérer le rôle.")
+      return
     }
 
-    router.push("/dashboard")
+    if (profile.role === "admin") {
+      router.push("/admin")
+    } else {
+      router.push("/dashboard")
+    }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-lg space-y-4 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-md w-full max-w-md space-y-5">
         <h1 className="text-2xl font-bold text-center text-orange-600">Connexion</h1>
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
         <input
           type="email"
-          placeholder="Email"
+          placeholder="Adresse email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-2 border rounded"
           required
+          className="w-full border p-3 rounded"
         />
 
         <input
@@ -57,26 +67,18 @@ export default function LoginPage() {
           placeholder="Mot de passe"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 border rounded"
           required
+          className="w-full border p-3 rounded"
         />
 
-        <button
-          type="submit"
-          className="w-full bg-orange-600 text-white py-2 rounded hover:bg-orange-700 transition"
-        >
+        <button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded">
           Se connecter
-          <p className="text-center text-sm mt-4">
-  Vous n’avez pas de compte ?{" "}
-  <span
-    onClick={() => router.push("/register")}
-    className="text-orange-500 hover:underline cursor-pointer"
-  >
-    Créer un compte agent
-  </span>
-</p>
-
         </button>
+
+        <p className="text-sm text-center text-gray-600">
+          Pas encore de compte ?{" "}
+          <a href="/register" className="text-orange-600 hover:underline">Créer un compte</a>
+        </p>
       </form>
     </div>
   )

@@ -1,14 +1,23 @@
-import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
+import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
+
+const OPTIONS_LIST = [
+  "Chauffage individuel", "Climatisation", "Double vitrage", "Fibre optique",
+  "Jardin", "Terrasse", "Balcon", "Piscine", "Garage", "Cave", "Ascenseur",
+  "Interphone", "Portail automatique", "Accès PMR", "Séjour lumineux",
+  "Cuisine équipée", "Cuisine américaine", "Suite parentale",
+  "Combles aménageables", "Alarme", "Vue dégagée", "Vue mer", "Parking",
+  "Exposition Sud", "Exposition Est", "Exposition Nord", "Exposition Ouest",
+  "Dernier étage", "Plain-pied"
+];
 
 export default function ModifierBien() {
   const router = useRouter()
   const { id } = router.query
-
   const [bien, setBien] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState("")
+  const [form, setForm] = useState({})
+  const [options, setOptions] = useState([])
 
   useEffect(() => {
     if (id) fetchBien()
@@ -16,66 +25,89 @@ export default function ModifierBien() {
 
   const fetchBien = async () => {
     const { data, error } = await supabase.from("biens").select("*").eq("id", id).single()
-    if (error) {
-      console.error("Erreur chargement bien :", error)
-      setMessage("Erreur lors du chargement.")
-    } else {
+    if (error) console.error("Erreur chargement bien :", error)
+    else {
       setBien(data)
+      setForm(data)
+      setOptions(data.options || [])
     }
-    setLoading(false)
   }
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
-    setBien({ ...bien, [name]: type === "checkbox" ? checked : value })
+    const val = type === "checkbox" ? checked : value
+    setForm((prev) => ({ ...prev, [name]: val }))
+  }
+
+  const toggleOption = (option) => {
+    setOptions((prev) =>
+      prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option]
+    )
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const { error } = await supabase.from("biens").update(bien).eq("id", id)
-    if (error) {
-      console.error("Erreur update :", error)
-      setMessage("Erreur lors de la sauvegarde.")
-    } else {
-      setMessage("✅ Bien modifié avec succès !")
-      setTimeout(() => router.push("/biens"), 1000)
+    const updates = {
+      ...form,
+      options: options
     }
+    const { error } = await supabase.from("biens").update(updates).eq("id", id)
+    if (error) alert("❌ Erreur mise à jour")
+    else alert("✅ Bien modifié avec succès")
   }
 
-  if (loading) return <p className="p-6">Chargement...</p>
-  if (!bien) return <p className="p-6 text-red-500">Aucun bien trouvé.</p>
+  if (!bien) return <p className="text-center mt-10">Chargement en cours...</p>
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow space-y-6">
+    <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow space-y-8">
       <h1 className="text-2xl font-bold text-orange-600">✏️ Modifier le bien</h1>
 
-      {message && <p className="text-sm text-center text-green-600">{message}</p>}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input name="surface_m2" value={bien.surface_m2 || ""} onChange={handleChange} type="number" placeholder="Surface (m²)" className="w-full border p-2 rounded" />
-        <input name="nb_pieces" value={bien.nb_pieces || ""} onChange={handleChange} type="number" placeholder="Nombre de pièces" className="w-full border p-2 rounded" />
-        <input name="nb_chambres" value={bien.nb_chambres || ""} onChange={handleChange} type="number" placeholder="Nombre de chambres" className="w-full border p-2 rounded" />
-        <input name="etage" value={bien.etage || ""} onChange={handleChange} type="text" placeholder="Étage" className="w-full border p-2 rounded" />
-        <input name="dpe" value={bien.dpe || ""} onChange={handleChange} type="text" placeholder="DPE" className="w-full border p-2 rounded" />
-        <input name="prix_vente" value={bien.prix_vente || ""} onChange={handleChange} type="number" placeholder="Prix de vente (€)" className="w-full border p-2 rounded" />
-        <input name="honoraires" value={bien.honoraires || ""} onChange={handleChange} type="number" placeholder="Honoraires (€)" className="w-full border p-2 rounded" />
-
-        <div className="flex gap-6 items-center">
-          <label className="flex items-center gap-2">
-            <input name="charge_vendeur" type="checkbox" checked={bien.charge_vendeur || false} onChange={handleChange} />
-            Charge vendeur
-          </label>
-          <label className="flex items-center gap-2">
-            <input name="charge_acquereur" type="checkbox" checked={bien.charge_acquereur || false} onChange={handleChange} />
-            Charge acquéreur
-          </label>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Bloc 1 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input name="titre" value={form.titre || ''} onChange={handleChange} className="input" placeholder="Titre du bien" />
+          <input name="type_bien" value={form.type_bien || ''} onChange={handleChange} className="input" placeholder="Type de bien" />
+          <input name="ville" value={form.ville || ''} onChange={handleChange} className="input" placeholder="Ville" />
+          <input name="code_postal" value={form.code_postal || ''} onChange={handleChange} className="input" placeholder="Code postal" />
+          <input name="mandat" value={form.mandat || ''} onChange={handleChange} className="input" placeholder="Mandat" />
+          <input name="statut" value={form.statut || ''} onChange={handleChange} className="input" placeholder="Statut" />
         </div>
 
-        <textarea name="description" value={bien.description || ""} onChange={handleChange} rows={4} placeholder="Description du bien" className="w-full border p-2 rounded" />
+        {/* Bloc 2 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input name="surface_m2" value={form.surface_m2 || ''} onChange={handleChange} className="input" placeholder="Surface (m²)" />
+          <input name="nb_pieces" value={form.nb_pieces || ''} onChange={handleChange} className="input" placeholder="Pièces" />
+          <input name="nb_chambres" value={form.nb_chambres || ''} onChange={handleChange} className="input" placeholder="Chambres" />
+          <input name="etage" value={form.etage || ''} onChange={handleChange} className="input" placeholder="Étage" />
+          <input name="dpe" value={form.dpe || ''} onChange={handleChange} className="input" placeholder="DPE" />
+          <input name="prix_vente" value={form.prix_vente || ''} onChange={handleChange} className="input" placeholder="Prix de vente (€)" />
+          <input name="honoraires" value={form.honoraires || ''} onChange={handleChange} className="input" placeholder="Honoraires (€)" />
+        </div>
 
-        <button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded">
-          💾 Enregistrer les modifications
-        </button>
+        <div className="flex gap-6 text-sm">
+          <label><input type="checkbox" name="charge_vendeur" checked={form.charge_vendeur || false} onChange={handleChange} /> Charge vendeur</label>
+          <label><input type="checkbox" name="charge_acquereur" checked={form.charge_acquereur || false} onChange={handleChange} /> Charge acquéreur</label>
+        </div>
+
+        <textarea name="description" value={form.description || ''} onChange={handleChange} rows={4} className="w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Description du bien"></textarea>
+
+        {/* Bloc 4 : Options */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {OPTIONS_LIST.map((opt) => (
+            <label key={opt} className="bg-orange-50 p-2 rounded flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={options.includes(opt)}
+                onChange={() => toggleOption(opt)}
+              />
+              <span>{opt}</span>
+            </label>
+          ))}
+        </div>
+
+        <div className="text-right">
+          <button type="submit" className="bg-orange-600 text-white px-6 py-2 rounded hover:bg-orange-700">💾 Enregistrer</button>
+        </div>
       </form>
     </div>
   )

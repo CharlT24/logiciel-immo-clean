@@ -37,18 +37,42 @@ export default function Layout({ children }) {
           <Image src="/logo.png" alt="Logo" width={40} height={40} className="mr-2" />
           <span className="text-xl font-extrabold text-orange-500 tracking-tight">Mon Agence</span>
         </div>
+
         <button onClick={() => router.push("/dashboard")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">📊 Tableau de bord</button>
         <button onClick={() => router.push("/clients")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">👥 Clients</button>
         <button onClick={() => router.push("/biens")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">🏡 Biens</button>
+
+        {/* 🔗 Rapprochement avec protection anti-bug */}
+        <button
+          onClick={() => {
+            if (router.pathname !== "/rapprochement") {
+              router.push("/rapprochement")
+            }
+          }}
+          className={`block w-full text-left py-2 px-3 rounded transition hover:bg-orange-100 ${router.pathname === "/rapprochement" ? "bg-orange-100 font-semibold text-orange-700" : ""}`}
+        >
+          🔗 Rapprochement
+        </button>
+
         <button onClick={() => router.push("/export")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">📤 Export</button>
         <button onClick={() => router.push("/agenda")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">📅 Agenda</button>
         <button onClick={() => window.open("https://www.a2sformation.com", "_blank")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">🎓 Formation</button>
         {isAdmin && <button onClick={() => router.push("/crypto")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">₿ Crypto</button>}
         {isAdmin && <button onClick={() => router.push("/admin")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">⚙️ Admin</button>}
+
         <div className="border-t border-gray-200 pt-4 mt-4">
-          <button onClick={async () => { await supabase.auth.signOut(); router.push("/login") }} className="block w-full text-left py-2 px-3 rounded text-red-600 hover:bg-red-100 transition">🚪 Déconnexion</button>
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut()
+              router.push("/login")
+            }}
+            className="block w-full text-left py-2 px-3 rounded text-red-600 hover:bg-red-100 transition"
+          >
+            🚪 Déconnexion
+          </button>
         </div>
       </aside>
+
       <main className="flex-1 p-8 bg-white rounded-tl-3xl shadow-inner overflow-y-auto">
         {children}
       </main>

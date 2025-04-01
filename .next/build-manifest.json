@@ -22,20 +22,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/biens": [
+    "/agenda": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/biens.js"
+      "static/chunks/pages/agenda.js"
     ],
-    "/biens/[id]/modifier": [
+    "/dashboard": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/biens/[id]/modifier.js"
-    ],
-    "/biens/ajouter/etape2": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/biens/ajouter/etape2.js"
+      "static/chunks/pages/dashboard.js"
     ]
   },
   "ampFirstPages": []
