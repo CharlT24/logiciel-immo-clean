@@ -20,5 +20,11 @@
   "../node_modules/@supabase/storage-js/dist/module/lib/helpers.js -> @supabase/node-fetch": {
     "id": "../node_modules/@supabase/storage-js/dist/module/lib/helpers.js -> @supabase/node-fetch",
     "files": []
+  },
+  "dashboard/index.js -> @/components/PDFViewer": {
+    "id": "dashboard/index.js -> @/components/PDFViewer",
+    "files": [
+      "static/chunks/components_PDFViewer_js.js"
+    ]
   }
 }

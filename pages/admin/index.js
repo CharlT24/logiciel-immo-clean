@@ -30,6 +30,13 @@ export default function AdminPage() {
         </button>
 
         <button
+          onClick={() => router.push("/admin/pdf")}
+         className="bg-red-500 text-white px-5 py-4 rounded shadow hover:bg-red-600 transition"
+        >
+         📰 Uploader une newsletter
+        </button>
+
+        <button
           onClick={() => router.push("/admin/crm")}
           className="bg-purple-500 text-white px-5 py-4 rounded shadow hover:bg-purple-600 transition"
         >

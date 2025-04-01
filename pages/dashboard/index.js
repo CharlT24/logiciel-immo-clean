@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
+import dynamic from "next/dynamic"
+
+const PDFViewer = dynamic(() => import("@/components/PDFViewer"), { ssr: false })
 
 export default function Dashboard() {
   const [biens, setBiens] = useState([])
@@ -8,13 +11,14 @@ export default function Dashboard() {
   const [caEstime, setCaEstime] = useState(0)
   const [caActe, setCaActe] = useState(0)
   const [topAgents, setTopAgents] = useState([])
+  const [topCompromis, setTopCompromis] = useState([])
+  const [newsletterUrl, setNewsletterUrl] = useState(null)
 
   useEffect(() => {
     const fetchData = async () => {
       const session = await supabase.auth.getSession()
       const agentId = session.data?.session?.user?.id
 
-      // Biens + clients personnels
       const { data: biensData } = await supabase.from("biens").select("*").eq("agent_id", agentId)
       const { data: clientsData } = await supabase.from("clients").select("*").eq("agent_id", agentId)
 
@@ -22,36 +26,43 @@ export default function Dashboard() {
       setClients(clientsData || [])
 
       const estime = (biensData || []).reduce((acc, b) => acc + (b.honoraires || 0), 0)
-      const acte = (biensData || []).filter(b => b.vendu).reduce((acc, b) => acc + (b.honoraires || 0), 0)
+      const acte = (biensData || []).filter(b => b.statut === "Vendu").reduce((acc, b) => acc + (b.honoraires || 0), 0)
 
       setCaEstime(estime)
       setCaActe(acte)
 
-      // Top agents global
-      const { data: allBiens } = await supabase.from("biens").select("honoraires, agent_id, vendu")
+      const { data: allBiens } = await supabase.from("biens").select("honoraires, agent_id, statut")
       const { data: allUsers } = await supabase.from("utilisateurs").select("id, nom, slug")
 
       const scores = {}
+      const compromis = {}
+
       for (const bien of allBiens || []) {
-        if (bien.vendu && bien.agent_id && bien.honoraires) {
-          scores[bien.agent_id] = (scores[bien.agent_id] || 0) + bien.honoraires
+        if (bien.agent_id) {
+          if (bien.statut === "Vendu") {
+            scores[bien.agent_id] = (scores[bien.agent_id] || 0) + (bien.honoraires || 0)
+          }
+          if (bien.statut === "Sous compromis") {
+            compromis[bien.agent_id] = (compromis[bien.agent_id] || 0) + 1
+          }
         }
       }
 
-      const top = Object.entries(scores)
-        .map(([id, total]) => {
-          const agent = allUsers.find(u => u.id === id)
-          return {
-            id,
-            nom: agent?.nom || "Inconnu",
-            slug: agent?.slug || "",
-            total
-          }
-        })
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 3)
+      const top = Object.entries(scores).map(([id, total]) => {
+        const agent = allUsers.find(u => u.id === id)
+        return { id, nom: agent?.nom || "Inconnu", slug: agent?.slug || "", total }
+      }).sort((a, b) => b.total - a.total).slice(0, 3)
+
+      const bestCompromis = Object.entries(compromis).map(([id, count]) => {
+        const agent = allUsers.find(u => u.id === id)
+        return { id, nom: agent?.nom || "Inconnu", slug: agent?.slug || "", count }
+      }).sort((a, b) => b.count - a.count).slice(0, 1)
 
       setTopAgents(top)
+      setTopCompromis(bestCompromis)
+
+      const { data: pdfs } = await supabase.from("newsletters").select("url").order("created_at", { ascending: false }).limit(1)
+      if (pdfs?.length > 0) setNewsletterUrl(pdfs[0].url)
     }
 
     fetchData()
@@ -61,7 +72,6 @@ export default function Dashboard() {
     <div className="space-y-10">
       <h2 className="text-2xl font-bold text-orange-700">📊 Tableau de bord</h2>
 
-      {/* Capsules de synthèse */}
       <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
         <StatCard label="📦 Biens enregistrés" value={biens.length} color="blue" />
         <StatCard label="👥 Clients actifs" value={clients.length} color="gray" />
@@ -69,7 +79,6 @@ export default function Dashboard() {
         <StatCard label="💰 CA acté (ventes)" value={`${caActe.toLocaleString()} €`} color="green" />
       </div>
 
-      {/* Classement */}
       <div className="bg-white shadow-md rounded-xl p-6 border">
         <h3 className="text-lg font-bold mb-4 text-orange-700">🏆 Top vendeurs du réseau</h3>
         <ul className="space-y-2 text-sm">
@@ -83,6 +92,20 @@ export default function Dashboard() {
           ))}
         </ul>
       </div>
+
+      {topCompromis.length > 0 && (
+        <div className="bg-white shadow-md rounded-xl p-6 border">
+          <h3 className="text-lg font-bold mb-4 text-green-700">🔒 Top compromis</h3>
+          <p className="text-sm">{topCompromis[0].nom} avec {topCompromis[0].count} compromis en cours</p>
+        </div>
+      )}
+
+      {newsletterUrl && (
+        <div className="bg-white shadow-md rounded-xl p-6 border">
+          <h3 className="text-lg font-bold mb-4 text-purple-700">📰 Dernière newsletter</h3>
+          <PDFViewer url={newsletterUrl} />
+        </div>
+      )}
     </div>
   )
 }

@@ -6,9 +6,14 @@ export default function FicheBien() {
   const router = useRouter()
   const { id } = router.query
   const [bien, setBien] = useState(null)
+  const [coverUrl, setCoverUrl] = useState(null)
+  const [galleryUrls, setGalleryUrls] = useState([])
 
   useEffect(() => {
-    if (id) fetchBien()
+    if (id) {
+      fetchBien()
+      fetchPhotos()
+    }
   }, [id])
 
   const fetchBien = async () => {
@@ -17,17 +22,37 @@ export default function FicheBien() {
     else setBien(data)
   }
 
+  const fetchPhotos = async () => {
+    const { data: coverData } = supabase.storage.from("photos").getPublicUrl(`covers/${id}/cover.jpg`)
+    setCoverUrl(coverData.publicUrl)
+
+    const { data: gallery } = await supabase.storage.from("photos").list(`gallery/${id}`)
+    if (gallery?.length) {
+      const urls = gallery.map(photo =>
+        supabase.storage.from("photos").getPublicUrl(`gallery/${id}/${photo.name}`).data.publicUrl
+      )
+      setGalleryUrls(urls)
+    }
+  }
+
   if (!bien) return <p className="text-center text-gray-400 mt-10">Chargement du bien...</p>
 
   const totalPrix = (bien.prix_vente || 0) + (bien.honoraires || 0)
-  const mapLink = bien.latitude && bien.longitude ? `https://www.google.com/maps?q=${bien.latitude},${bien.longitude}` : null
 
-  const handlePrint = () => {
-    window.print()
-  }
+  const addressQuery = encodeURIComponent(`${bien.ville || ""}, ${bien.code_postal || ""}`)
+  const mapLink = `https://www.google.com/maps?q=${addressQuery}`
+  const mapEmbed = `https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${addressQuery}`
+
+  const handlePrint = () => window.print()
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-10 print:bg-white">
+      {/* Retour */}
+      <button
+        onClick={() => router.push("/biens")}
+        className="text-orange-600 text-sm hover:underline mb-4"
+      >⬅️ Retour à la liste</button>
+
       {/* Bouton PDF */}
       <div className="flex justify-end">
         <button
@@ -44,16 +69,16 @@ export default function FicheBien() {
       </div>
 
       {/* Image couverture */}
-      {bien.photos && (
-        <img src={bien.photos} alt="photo" className="w-full rounded-xl shadow-xl h-96 object-cover" />
+      {coverUrl && (
+        <img src={coverUrl} alt="photo" className="w-full rounded-xl shadow-xl h-96 object-cover" />
       )}
 
       {/* Galerie */}
-      {bien["photo-biens"] && (
+      {galleryUrls.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-orange-500 mt-6 mb-2">📸 Galerie</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {bien["photo-biens"].map((url, idx) => (
+            {galleryUrls.map((url, idx) => (
               <img key={idx} src={url} className="rounded-lg shadow h-40 object-cover" />
             ))}
           </div>
@@ -102,18 +127,16 @@ export default function FicheBien() {
       )}
 
       {/* Map */}
-      {mapLink && (
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold text-orange-500 mb-2">📍 Localisation</h2>
-          <iframe
-            src={`https://www.google.com/maps?q=${bien.latitude},${bien.longitude}&hl=fr&z=15&output=embed`}
-            width="100%"
-            height="350"
-            className="rounded-xl shadow"
-            loading="lazy"
-          ></iframe>
-        </div>
-      )}
+      <div className="mt-6">
+        <h2 className="text-lg font-semibold text-orange-500 mb-2">📍 Localisation</h2>
+        <iframe
+          src={mapEmbed.replace("YOUR_GOOGLE_MAPS_API_KEY", process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)}
+          width="100%"
+          height="350"
+          className="rounded-xl shadow"
+          loading="lazy"
+        ></iframe>
+      </div>
     </div>
   )
 }
