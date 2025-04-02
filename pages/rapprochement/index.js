@@ -9,9 +9,9 @@ export default function Rapprochements() {
   useEffect(() => {
     const fetchData = async () => {
       const { data: clientsData } = await supabase.from("clients").select("*")
-      const { data: biensData } = await supabase.from("biens").select("*").eq("disponible", true)
+      const { data: biensData } = await supabase.from("biens").select("*")
       setClients(clientsData || [])
-      setBiens(biensData || [])
+      setBiens((biensData || []).filter(b => b.disponibilite === true))
     }
 
     fetchData()
@@ -30,12 +30,15 @@ export default function Rapprochements() {
 
   const biensCorrespondants = (client) => {
     return biens.filter((bien) => {
-      return (
-        bien.ville?.toLowerCase().includes(client.ville_recherche?.toLowerCase()) &&
-        bien.type_bien?.toLowerCase().includes(client.type_bien?.toLowerCase() || "") &&
-        bien.prix >= client.budget_min &&
-        bien.prix <= client.budget_max
-      )
+      const prix_vente = bien.prix_vente || 0
+      const honoraires = bien.honoraires || 0
+      const prixFAI = prix_vente + honoraires
+
+      const villeOK = bien.ville?.toLowerCase().includes(client.ville_recherche?.toLowerCase() || "")
+      const prixOK = prixFAI >= (client.budget_min || 0) && prixFAI <= (client.budget_max || Infinity)
+      const typeOK = !client.type_bien || bien.type_bien?.toLowerCase().includes(client.type_bien.toLowerCase())
+
+      return villeOK && prixOK && typeOK
     })
   }
 
@@ -66,7 +69,6 @@ export default function Rapprochements() {
               <p className="text-sm text-gray-600">💰 {client.budget_min}€ – {client.budget_max}€</p>
               <p className="text-sm text-gray-600">🏠 {client.type_bien}</p>
 
-              {/* Lien vers recherche Google */}
               <a
                 href={construireRequeteGoogle(client)}
                 target="_blank"
@@ -76,21 +78,23 @@ export default function Rapprochements() {
                 🌐 Rechercher sur Google
               </a>
 
-              {/* Liste des biens associés */}
               {hasMatch && (
                 <div className="mt-4">
                   <p className="text-sm font-semibold text-gray-700 mb-1">🏡 Biens correspondants :</p>
                   <ul className="text-sm space-y-1">
-                    {matches.map((bien) => (
-                      <li key={bien.id}>
-                        <Link
-                          href={`/biens/${bien.id}`}
-                          className="text-orange-700 hover:underline"
-                        >
-                          📍 {bien.titre} à {bien.ville} – {bien.prix?.toLocaleString()} €
-                        </Link>
-                      </li>
-                    ))}
+                    {matches.map((bien) => {
+                      const prixFAI = (bien.prix_vente || 0) + (bien.honoraires || 0)
+                      return (
+                        <li key={bien.id}>
+                          <Link
+                            href={`/biens/${bien.id}`}
+                            className="text-orange-700 hover:underline"
+                          >
+                            📍 {bien.titre} à {bien.ville} – {prixFAI.toLocaleString()} €
+                          </Link>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
               )}

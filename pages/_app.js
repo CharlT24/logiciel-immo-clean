@@ -1,4 +1,4 @@
-import "@/styles/globals.css"
+import "../styles/globals.css"
 import { useState } from "react"
 import { createPagesBrowserClient } from "@supabase/auth-helpers-nextjs"
 import { SessionContextProvider as SupabaseProvider } from "@supabase/auth-helpers-react"

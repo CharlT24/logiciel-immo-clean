@@ -1,4 +1,3 @@
-// pages/biens/ajouter/etape1.js
 import { useState, useEffect } from "react"
 import { useRouter } from "next/router"
 import { supabase } from "@/lib/supabaseClient"
@@ -6,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient"
 export default function Etape1() {
   const router = useRouter()
   const [agentId, setAgentId] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   const [titre, setTitre] = useState("")
   const [typeBien, setTypeBien] = useState("")
@@ -16,14 +16,22 @@ export default function Etape1() {
 
   useEffect(() => {
     const getUser = async () => {
-      const session = await supabase.auth.getSession()
-      const id = session.data?.session?.user?.id
-      setAgentId(id)
+      const { data: { session } } = await supabase.auth.getSession()
+      const id = session?.user?.id
+      if (!id) {
+        alert("Erreur : utilisateur non connecté")
+        router.push("/login")
+      } else {
+        setAgentId(id)
+        setLoading(false)
+      }
     }
     getUser()
   }, [])
 
   const handleSubmit = async () => {
+    if (!agentId) return alert("Chargement utilisateur en cours…")
+
     const newBien = {
       titre,
       type_bien: typeBien,
@@ -33,8 +41,6 @@ export default function Etape1() {
       code_postal: cp,
       agent_id: agentId,
     }
-
-    console.log("📤 Données à enregistrer :", newBien)
 
     const { data, error } = await supabase
       .from("biens")
@@ -50,11 +56,15 @@ export default function Etape1() {
     }
   }
 
+  if (loading) return <p className="text-center mt-10">Chargement...</p>
+
   return (
     <div className="max-w-3xl mx-auto bg-white p-8 mt-10 rounded-xl shadow space-y-6 border">
       <h1 className="text-2xl font-bold text-orange-600">📝 Étape 1 : Localisation & type de bien</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* ... identique aux inputs précédents ... */}
+        {/* Tous tes champs inchangés, conservés à l’identique */}
         <div>
           <label className="text-sm font-semibold">Titre du bien</label>
           <input

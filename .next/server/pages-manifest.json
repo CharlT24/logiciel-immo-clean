@@ -2,7 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/biens": "pages/biens.js",
   "/dashboard": "pages/dashboard.js",
-  "/biens/[id]": "pages/biens/[id].js"
+  "/parametres": "pages/parametres.js",
+  "/agenda": "pages/agenda.js",
+  "/admin": "pages/admin.js"
 }

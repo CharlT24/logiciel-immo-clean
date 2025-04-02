@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import { supabase } from "@/lib/supabaseClient"
+import { v4 as uuidv4 } from "uuid"
 
 export default function Parametres() {
   const [sessionUserId, setSessionUserId] = useState(null)
@@ -16,6 +17,7 @@ export default function Parametres() {
     adresse: "",
     siret: "",
     rsac: "",
+    photo_url: "",
   })
 
   const router = useRouter()
@@ -47,6 +49,7 @@ export default function Parametres() {
         adresse: data.adresse || "",
         siret: data.siret || "",
         rsac: data.rsac || "",
+        photo_url: data.photo_url || "",
       })
     }
   }
@@ -54,6 +57,23 @@ export default function Parametres() {
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file || !sessionUserId) return
+
+    const ext = file.name.split(".").pop()
+    const filename = `${sessionUserId}-${uuidv4()}.${ext}`
+    const path = `avatars/${filename}`
+
+    const { error: uploadError } = await supabase.storage.from("photos").upload(path, file)
+    if (uploadError) return alert("Erreur upload avatar.")
+
+    const { data: publicUrlData } = supabase.storage.from("photos").getPublicUrl(path)
+    const publicUrl = publicUrlData.publicUrl
+
+    setFormData((prev) => ({ ...prev, photo_url: publicUrl }))
   }
 
   const handleSubmit = async (e) => {
@@ -70,8 +90,23 @@ export default function Parametres() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow rounded-xl p-8 mt-8">
-      <h1 className="text-2xl font-bold text-orange-700 mb-6">⚙️ Paramètres du compte</h1>
+    <div className="max-w-4xl mx-auto bg-white shadow rounded-xl p-8 mt-8 space-y-8">
+      <h1 className="text-2xl font-bold text-orange-700">⚙️ Paramètres du compte</h1>
+
+      {/* Photo de profil */}
+      <div className="flex items-center gap-4">
+        {formData.photo_url ? (
+          <img src={formData.photo_url} alt="avatar" className="w-20 h-20 rounded-full object-cover border" />
+        ) : (
+          <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 font-bold text-lg border">
+            ?
+          </div>
+        )}
+        <div>
+          <label className="block mb-1 font-medium text-sm">Photo de profil</label>
+          <input type="file" accept="image/*" onChange={handlePhotoUpload} className="text-sm" />
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-700">
         <Input label="Nom" name="nom" value={formData.nom} onChange={handleChange} />
@@ -86,7 +121,7 @@ export default function Parametres() {
         <Input label="SIRET" name="siret" value={formData.siret} onChange={handleChange} />
         <Input label="Numéro RSAC" name="rsac" value={formData.rsac} onChange={handleChange} />
 
-        <div className="col-span-full">
+        <div className="col-span-full text-right">
           <button
             type="submit"
             className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded shadow"
