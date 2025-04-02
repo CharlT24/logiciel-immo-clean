@@ -22,11 +22,16 @@ export default function Dashboard() {
       const { data: biensData } = await supabase.from("biens").select("*").eq("agent_id", agentId)
       const { data: clientsData } = await supabase.from("clients").select("*").eq("agent_id", agentId)
 
-      setBiens(biensData || [])
-      setClients(clientsData || [])
+      const biensList = biensData || []
+      const clientsList = clientsData || []
 
-      const estime = (biensData || []).reduce((acc, b) => acc + (b.honoraires || 0), 0)
-      const acte = (biensData || []).filter(b => b.statut === "Vendu").reduce((acc, b) => acc + (b.honoraires || 0), 0)
+      setBiens(biensList)
+      setClients(clientsList)
+
+      const estime = biensList.reduce((acc, b) => acc + (b.honoraires || 0), 0)
+      const acte = biensList
+        .filter(b => b.statut === "Vendu")
+        .reduce((acc, b) => acc + (b.honoraires || 0), 0)
 
       setCaEstime(estime)
       setCaActe(acte)
@@ -61,7 +66,12 @@ export default function Dashboard() {
       setTopAgents(top)
       setTopCompromis(bestCompromis)
 
-      const { data: pdfs } = await supabase.from("newsletters").select("url").order("created_at", { ascending: false }).limit(1)
+      const { data: pdfs } = await supabase
+        .from("newsletters")
+        .select("url")
+        .order("created_at", { ascending: false })
+        .limit(1)
+
       if (pdfs?.length > 0) setNewsletterUrl(pdfs[0].url)
     }
 
@@ -72,13 +82,15 @@ export default function Dashboard() {
     <div className="space-y-10">
       <h2 className="text-2xl font-bold text-orange-700">📊 Tableau de bord</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
         <StatCard label="📦 Biens enregistrés" value={biens.length} color="blue" />
         <StatCard label="👥 Clients actifs" value={clients.length} color="gray" />
         <StatCard label="💼 CA estimé" value={`${caEstime.toLocaleString()} €`} color="orange" />
         <StatCard label="💰 CA acté (ventes)" value={`${caActe.toLocaleString()} €`} color="green" />
+        <StatCard label="📄 Documents" value="Accéder" color="purple" href="/documents" />
       </div>
 
+      {/* Top vendeurs */}
       <div className="bg-white shadow-md rounded-xl p-6 border">
         <h3 className="text-lg font-bold mb-4 text-orange-700">🏆 Top vendeurs du réseau</h3>
         <ul className="space-y-2 text-sm">
@@ -93,6 +105,7 @@ export default function Dashboard() {
         </ul>
       </div>
 
+      {/* Top compromis */}
       {topCompromis.length > 0 && (
         <div className="bg-white shadow-md rounded-xl p-6 border">
           <h3 className="text-lg font-bold mb-4 text-green-700">🔒 Top compromis</h3>
@@ -100,6 +113,7 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Newsletter */}
       {newsletterUrl && (
         <div className="bg-white shadow-md rounded-xl p-6 border">
           <h3 className="text-lg font-bold mb-4 text-purple-700">📰 Dernière newsletter</h3>
@@ -110,16 +124,17 @@ export default function Dashboard() {
   )
 }
 
-function StatCard({ label, value, color = "gray" }) {
+function StatCard({ label, value, color = "gray", href }) {
   const colorMap = {
     orange: "text-orange-600 bg-orange-50",
     blue: "text-blue-600 bg-blue-50",
     green: "text-green-600 bg-green-50",
-    gray: "text-gray-600 bg-gray-100"
+    gray: "text-gray-600 bg-gray-100",
+    purple: "text-purple-600 bg-purple-100"
   }
 
-  return (
-    <div className="bg-white shadow rounded-xl p-5 flex items-center gap-4">
+  const content = (
+    <div className="bg-white shadow rounded-xl p-5 flex items-center gap-4 hover:shadow-md transition cursor-pointer">
       <div className={`text-3xl ${colorMap[color]} p-3 rounded-full`}>📈</div>
       <div>
         <p className="text-sm text-gray-500">{label}</p>
@@ -127,4 +142,6 @@ function StatCard({ label, value, color = "gray" }) {
       </div>
     </div>
   )
+
+  return href ? <Link href={href}>{content}</Link> : content
 }
