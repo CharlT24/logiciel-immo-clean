@@ -31,41 +31,33 @@ export default function Register() {
       return
     }
 
-    // ✅ Étape 1 : création de l'utilisateur via Supabase Auth
-    const { error: signUpError } = await supabase.auth.signUp({ email, password })
+    // Étape 1 : création de l'utilisateur via Supabase Auth
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+    })
 
     if (signUpError) {
       console.error("❌ Erreur création compte :", signUpError)
-      alert("Erreur Supabase : " + signUpError.message)
+      alert("Erreur à la création du compte : " + signUpError.message)
       setLoading(false)
       return
     }
 
-    // ✅ Étape 2 : récupérer le token de session
-    const sessionRes = await supabase.auth.getSession()
-    const accessToken = sessionRes?.data?.session?.access_token
+    // 🕐 Attente pour s'assurer que la session est bien active
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
-    if (!accessToken) {
-      alert("❌ Impossible de récupérer le token d’accès")
-      setLoading(false)
-      return
-    }
-
-    // ✅ Étape 3 : appel de l’API sécurisée côté serveur
-    const res = await fetch("/api/register-user", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ nom, telephone }),
+    // Étape 2 : appel RPC sécurisé pour insertion dans la table utilisateurs
+    const { error: rpcError } = await supabase.rpc("insert_utilisateur", {
+      p_email: email,
+      p_nom: nom,
+      p_telephone: telephone,
+      p_role: "agent", // ou "admin" si besoin
     })
 
-    const result = await res.json()
-
-    if (!res.ok) {
-      console.error("❌ Erreur API :", result)
-      alert("Erreur API : " + result.error)
+    if (rpcError) {
+      console.error("❌ Erreur RPC :", rpcError)
+      alert("Erreur lors de l'enregistrement dans la base.")
       setLoading(false)
       return
     }
