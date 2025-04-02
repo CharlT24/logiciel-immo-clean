@@ -2,12 +2,15 @@ import { useSession, signIn, signOut } from "next-auth/react"
 import { useEffect, useState } from "react"
 
 export default function Agenda() {
-  const { data: session } = useSession()
+  const sessionHook = useSession()
+  const session = sessionHook?.data
   const [vacation, setVacation] = useState(null)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (session?.accessToken) fetchVacationSettings()
+    if (session?.accessToken) {
+      fetchVacationSettings()
+    }
   }, [session])
 
   const fetchVacationSettings = async () => {
@@ -30,8 +33,14 @@ export default function Agenda() {
 
   const handleOutlookLogin = () => {
     alert("🔧 Connexion Outlook à intégrer (Microsoft Graph API)")
-    // Plus tard : Intégrer MSAL.js pour authentification Microsoft
-    // https://learn.microsoft.com/en-us/azure/active-directory/develop/tutorial-v2-javascript-spa
+  }
+
+  if (sessionHook.status === "loading") {
+    return (
+      <div className="text-center mt-20 text-gray-500 text-sm">
+        ⏳ Chargement de la session...
+      </div>
+    )
   }
 
   return (
@@ -59,7 +68,7 @@ export default function Agenda() {
           <p className="text-gray-600">Connecté en tant que : <strong>{session.user.email}</strong></p>
           <button
             onClick={() => signOut()}
-            className="text-red-500 text-sm hover:underline"
+            className="text-red-600 text-sm hover:underline"
           >🚪 Se déconnecter</button>
 
           <hr />
