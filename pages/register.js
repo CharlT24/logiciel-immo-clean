@@ -4,117 +4,107 @@ import { supabase } from "@/lib/supabaseClient"
 
 export default function Register() {
   const router = useRouter()
+
   const [form, setForm] = useState({
-    nom: "",
-    prenom: "",
     email: "",
     password: "",
+    nom: "",
+    telephone: "",
   })
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
+
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setForm((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleRegister = async (e) => {
     e.preventDefault()
-    setError("")
-    setSuccess(false)
     setLoading(true)
 
-    // Étape 1 : création du compte
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-    })
+    const { email, password, nom, telephone } = form
+
+    if (!email || !password || !nom || !telephone) {
+      alert("Tous les champs sont requis")
+      setLoading(false)
+      return
+    }
+
+    // ✅ Étape 1 : création de l'utilisateur via Supabase Auth
+    const { error: signUpError } = await supabase.auth.signUp({ email, password })
 
     if (signUpError) {
-      setError("Erreur à la création du compte : " + signUpError.message)
+      console.error("❌ Erreur création compte :", signUpError)
+      alert("Erreur Supabase : " + signUpError.message)
       setLoading(false)
       return
     }
 
-    // Étape 2 : forcer la connexion pour activer la session
-    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-      email: form.email,
-      password: form.password,
+    // ✅ Étape 2 : récupérer le token de session
+    const sessionRes = await supabase.auth.getSession()
+    const accessToken = sessionRes?.data?.session?.access_token
+
+    if (!accessToken) {
+      alert("❌ Impossible de récupérer le token d’accès")
+      setLoading(false)
+      return
+    }
+
+    // ✅ Étape 3 : appel de l’API sécurisée côté serveur
+    const res = await fetch("/api/register-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ nom, telephone }),
     })
 
-    if (loginError) {
-      setError("Erreur de connexion automatique : " + loginError.message)
+    const result = await res.json()
+
+    if (!res.ok) {
+      console.error("❌ Erreur API :", result)
+      alert("Erreur API : " + result.error)
       setLoading(false)
       return
     }
 
-    const user = loginData?.user
-    console.log("✅ USER CONNECTÉ :", user)
-
-    if (!user?.id) {
-      setError("Impossible de récupérer l'ID utilisateur.")
-      setLoading(false)
-      return
-    }
-
-    // Étape 3 : insérer dans la table `utilisateurs`
-    const { error: insertError } = await supabase.from("utilisateurs").insert([
-      {
-        id: user.id,
-        nom: form.nom,
-        prenom: form.prenom,
-        email: form.email,
-        role: "agent",
-        is_validated: false,
-      }
-    ])
-
-    if (insertError) {
-      console.error("❌ INSERT ERROR", insertError)
-      setError("Erreur lors de l'enregistrement du profil : " + insertError.message)
-      setLoading(false)
-      return
-    }
-
-    setSuccess(true)
-    setTimeout(() => router.push("/login"), 2000)
-    setLoading(false)
+    alert("✅ Compte créé avec succès !")
+    router.push("/login")
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={handleRegister} className="bg-white p-8 rounded-xl shadow-md w-full max-w-md space-y-5">
-        <h1 className="text-2xl font-bold text-center text-orange-600">Créer un compte agent</h1>
+    <div className="max-w-md mx-auto mt-12 bg-white p-8 shadow-lg rounded-xl space-y-6">
+      <h1 className="text-2xl font-bold text-orange-600 text-center">📝 Créer un compte</h1>
 
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-        {success && <p className="text-green-600 text-sm text-center">✅ Compte créé avec succès ! Redirection...</p>}
-
+      <form onSubmit={handleRegister} className="space-y-4">
         <input
           type="text"
           name="nom"
-          placeholder="Nom"
+          placeholder="Nom complet"
           value={form.nom}
           onChange={handleChange}
+          className="input"
           required
-          className="w-full border p-3 rounded"
         />
         <input
-          type="text"
-          name="prenom"
-          placeholder="Prénom"
-          value={form.prenom}
+          type="tel"
+          name="telephone"
+          placeholder="Téléphone"
+          value={form.telephone}
           onChange={handleChange}
+          className="input"
           required
-          className="w-full border p-3 rounded"
         />
         <input
           type="email"
           name="email"
-          placeholder="Adresse email"
+          placeholder="Email"
           value={form.email}
           onChange={handleChange}
+          className="input"
           required
-          className="w-full border p-3 rounded"
         />
         <input
           type="password"
@@ -122,18 +112,17 @@ export default function Register() {
           placeholder="Mot de passe"
           value={form.password}
           onChange={handleChange}
+          className="input"
           required
-          className="w-full border p-3 rounded"
         />
 
-        <button type="submit" disabled={loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded">
-          {loading ? "Création..." : "Créer le compte"}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-orange-600 text-white py-2 rounded hover:bg-orange-700 transition"
+        >
+          {loading ? "Création..." : "Créer mon compte"}
         </button>
-
-        <p className="text-sm text-center text-gray-600">
-          Déjà inscrit ?{" "}
-          <a href="/login" className="text-orange-600 hover:underline">Se connecter</a>
-        </p>
       </form>
     </div>
   )
