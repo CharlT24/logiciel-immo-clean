@@ -86,44 +86,17 @@ export default function FicheBien() {
     <div className="max-w-6xl mx-auto p-6 space-y-10 print:bg-white">
       {/* Retour & Actions */}
       <div className="flex justify-between items-center">
-        <button
-          onClick={() => router.push("/biens")}
-          className="text-orange-600 text-sm hover:underline"
-        >
-          ⬅️ Retour à la liste
-        </button>
-
+        <button onClick={() => router.push("/biens")} className="text-orange-600 text-sm hover:underline">⬅️ Retour à la liste</button>
         <div className="flex gap-4 items-center">
-          {isOwnerOrAdmin && (
-            <button
-              onClick={() => router.push(`/biens/${id}/modifier`)}
-              className="text-sm text-orange-600 hover:underline"
-            >
-              📝 Modifier
-            </button>
-          )}
-          {role === "admin" && (
-            <button
-              onClick={handleDelete}
-              className="text-sm text-red-600 hover:underline"
-            >
-              🗑️ Supprimer
-            </button>
-          )}
-          {role === "admin" && (
-            <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs">Admin</span>
-          )}
+          {isOwnerOrAdmin && <button onClick={() => router.push(`/biens/${id}/modifier`)} className="text-sm text-orange-600 hover:underline">📝 Modifier</button>}
+          {role === "admin" && <button onClick={handleDelete} className="text-sm text-red-600 hover:underline">🗑️ Supprimer</button>}
+          {role === "admin" && <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs">Admin</span>}
         </div>
       </div>
 
       {/* Bouton PDF */}
       <div className="flex justify-end">
-        <button
-          onClick={() => window.print()}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow text-sm"
-        >
-          📄 Télécharger cette fiche
-        </button>
+        <button onClick={() => window.print()} className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow text-sm">📄 Télécharger cette fiche</button>
       </div>
 
       {/* Titre & localisation */}
@@ -133,12 +106,8 @@ export default function FicheBien() {
         <p className="text-sm text-gray-400">Mandat : {bien.mandat} – Statut : {bien.statut}</p>
       </div>
 
-      {/* Image couverture */}
-      {coverUrl && (
-        <img src={coverUrl} alt="photo" className="w-full rounded-xl shadow-xl h-96 object-cover" />
-      )}
+      {coverUrl && (<img src={coverUrl} alt="photo" className="w-full rounded-xl shadow-xl h-96 object-cover" />)}
 
-      {/* Galerie */}
       {galleryUrls.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-orange-500 mt-6 mb-2">📸 Galerie</h2>
@@ -150,7 +119,6 @@ export default function FicheBien() {
         </div>
       )}
 
-      {/* Infos détaillées */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm">
         <p>📐 Surface : <strong>{bien.surface_m2} m²</strong></p>
         <p>🛋️ Pièces : <strong>{bien.nb_pieces}</strong></p>
@@ -158,26 +126,35 @@ export default function FicheBien() {
         <p>📊 DPE : <strong>{bien.dpe}</strong></p>
         <p>🏢 Étage : <strong>{bien.etage || '-'}</strong></p>
         <p>🏷️ Type : <strong>{bien.type_bien}</strong></p>
+        <p>🏗️ Année de construction : <strong>{bien.annee_construction || '-'}</strong></p>
+        <p>🔥 Chauffage : <strong>{bien.type_chauffage} ({bien.mode_chauffage})</strong></p>
+        <p>🏞️ Terrain : <strong>{bien.surface_terrain} m²</strong></p>
+        <p>🏛️ Mitoyenneté : <strong>{bien.mitoyennete}</strong></p>
+        <p>🏢 Étages immeuble : <strong>{bien.nb_etages_immeuble}</strong></p>
       </div>
 
-      {/* Prix */}
       <div className="bg-orange-50 p-4 rounded shadow text-sm">
         <p>💰 Prix de vente : <strong>{bien.prix_vente?.toLocaleString()} €</strong></p>
         <p>➕ Honoraires : {bien.honoraires?.toLocaleString()} €</p>
         <p className="mt-1 font-semibold">Total : {totalPrix.toLocaleString()} €</p>
+        <p>📊 Pourcentage honoraires : {((bien.honoraires / bien.prix_vente) * 100 || 0).toFixed(2)}%</p>
         {bien.charge_vendeur && <p>✅ Honoraires à la charge du vendeur</p>}
         {bien.charge_acquereur && <p>✅ Honoraires à la charge de l’acquéreur</p>}
+        <p>📜 Taxe foncière : {bien.taxe_fonciere || '-'} €</p>
+        <p>🏷️ Numéro de dossier : {bien.numero_dossier || '-'}</p>
       </div>
 
-      {/* Description */}
       {bien.description && (
         <div>
           <h2 className="text-lg font-semibold text-orange-500">📝 Description</h2>
-          <p className="text-sm text-gray-700 mt-2 whitespace-pre-line">{bien.description}</p>
+          <p className="text-sm text-gray-700 mt-2 whitespace-pre-line">
+            {bien.description}
+            {'\n\n'}🔍 Les informations sur les risques auxquels ce bien est exposé sont disponibles sur le site :
+            <a href="https://www.georisques.gouv.fr" className="text-blue-600 underline ml-2" target="_blank">Géorisques</a>
+          </p>
         </div>
       )}
 
-      {/* Options */}
       {bien.options && bien.options.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-orange-500">🔧 Options & équipements</h2>
@@ -191,7 +168,6 @@ export default function FicheBien() {
         </div>
       )}
 
-      {/* Map */}
       <div className="mt-6">
         <h2 className="text-lg font-semibold text-orange-500 mb-2">📍 Localisation</h2>
         <iframe

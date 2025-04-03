@@ -13,6 +13,8 @@ export default function Etape1() {
   const [statut, setStatut] = useState("Disponible")
   const [ville, setVille] = useState("")
   const [cp, setCp] = useState("")
+  const [vente, setVente] = useState(false)
+  const [location, setLocation] = useState(false)
 
   useEffect(() => {
     const getUser = async () => {
@@ -39,6 +41,8 @@ export default function Etape1() {
       statut,
       ville,
       code_postal: cp,
+      vente,
+      location,
       agent_id: agentId,
     }
 
@@ -63,8 +67,6 @@ export default function Etape1() {
       <h1 className="text-2xl font-bold text-orange-600">📝 Étape 1 : Localisation & type de bien</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* ... identique aux inputs précédents ... */}
-        {/* Tous tes champs inchangés, conservés à l’identique */}
         <div>
           <label className="text-sm font-semibold">Titre du bien</label>
           <input
@@ -138,6 +140,17 @@ export default function Etape1() {
             <option value="Sous compromis">Sous compromis</option>
             <option value="Vendu">Vendu</option>
           </select>
+        </div>
+
+        <div className="md:col-span-2 flex gap-6 items-center">
+          <label className="inline-flex items-center">
+            <input type="checkbox" checked={vente} onChange={(e) => setVente(e.target.checked)} className="mr-2" />
+            Vente
+          </label>
+          <label className="inline-flex items-center">
+            <input type="checkbox" checked={location} onChange={(e) => setLocation(e.target.checked)} className="mr-2" />
+            Location
+          </label>
         </div>
       </div>
 

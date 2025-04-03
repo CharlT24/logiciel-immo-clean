@@ -41,14 +41,20 @@ export default function ListeBiens() {
   const handleDelete = async (id) => {
     if (confirm("Supprimer ce bien ? Cette action est irréversible.")) {
       const { error } = await supabase.from("biens").delete().eq("id", id)
+  
       if (!error) {
+        // 🔁 Supprime aussi le bien dans WordPress
+        await fetch(`http://localhost/wordpress/wp-json/oi/v1/supabase-delete/${id}`, {
+          method: "DELETE"
+        })
+  
         setBiens((prev) => prev.filter((b) => b.id !== id))
         alert("Bien supprimé ✅")
       } else {
         alert("Erreur lors de la suppression ❌")
       }
     }
-  }
+  }  
 
   const handleFiltreChange = (e) => {
     const { name, value } = e.target
@@ -106,7 +112,7 @@ export default function ListeBiens() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {biens.map((bien) => {
             const prixFAI = (bien.prix_vente || 0) + (bien.honoraires || 0)
-            const image = bien.photos?.[0] || "/no-photo.jpg"
+            const image = `https://fkavtsofmglifzalclyn.supabase.co/storage/v1/object/public/photos/covers/${bien.id}/cover.jpg`
 
             return (
               <div
@@ -123,7 +129,6 @@ export default function ListeBiens() {
                     <h2 className="font-bold text-xl text-gray-800 truncate">{bien.titre}</h2>
                     <p className="text-sm text-gray-500 mb-2">{bien.ville}</p>
 
-                    {/* Capsules cliquables */}
                     <div className="flex flex-wrap gap-3 mt-3">
                       <Link href={`/biens/${bien.id}`} legacyBehavior>
                         <a className="bg-orange-100 text-orange-700 text-sm font-semibold px-5 py-2 rounded-xl shadow-sm hover:bg-orange-200 transition">
@@ -145,7 +150,6 @@ export default function ListeBiens() {
                     </div>
                   </div>
 
-                  {/* Boutons action */}
                   <div className="flex justify-between items-center mt-4">
                     <button
                       onClick={() => router.push(`/biens/${bien.id}/modifier`)}

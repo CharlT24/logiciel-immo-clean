@@ -63,6 +63,14 @@ export default function Layout({ children }) {
           🔗 Rapprochement
         </button>
 
+        <button
+  onClick={() => router.push("/agents")}
+  className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition"
+>
+  🧑‍💼 Agents
+</button>
+
+
         <button onClick={() => router.push("/export")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">📤 Export</button>
         <button onClick={() => router.push("/agenda")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">📅 Agenda</button>
         <button onClick={() => window.open("https://www.a2sformation.com", "_blank")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">🎓 Formation</button>

@@ -26,13 +26,32 @@ export default function AjouterAgent() {
     e.preventDefault()
     setLoading(true)
 
-    const { data, error } = await supabase.from("utilisateurs").insert([formData])
+    const { data, error } = await supabase
+      .from("utilisateurs")
+      .insert([formData])
+      .select()
+      .single()
 
     setLoading(false)
+
     if (error) {
       console.error("Erreur :", error)
       alert("❌ Erreur lors de la création de l’agent.")
     } else {
+      // ✅ Envoi des données vers WordPress
+      await fetch("http://localhost/wordpress/wp-json/oi/v1/create-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: data.id,
+          nom: data.nom,
+          ville: data.ville,
+          telephone: data.telephone,
+          email: data.email_contact,
+          photo_url: data.photo_url,
+        }),
+      })
+
       alert("✅ Agent ajouté avec succès !")
       router.push("/admin/utilisateurs")
     }

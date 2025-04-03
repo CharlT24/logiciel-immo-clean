@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import { supabase } from "@/lib/supabaseClient"
-import { v4 as uuidv4 } from "uuid"
 
 export default function Parametres() {
   const [sessionUserId, setSessionUserId] = useState(null)
@@ -35,8 +34,7 @@ export default function Parametres() {
 
   const fetchInfos = async (userId) => {
     const { data, error } = await supabase.from("utilisateurs").select("*").eq("id", userId).single()
-    if (error) console.error("Erreur utilisateur :", error)
-    if (data) {
+    if (!error && data) {
       setFormData({
         nom: data.nom || "",
         prenom: data.prenom || "",
@@ -64,16 +62,37 @@ export default function Parametres() {
     if (!file || !sessionUserId) return
 
     const ext = file.name.split(".").pop()
-    const filename = `${sessionUserId}-${uuidv4()}.${ext}`
+    const filename = `${sessionUserId}.${ext}`
     const path = `avatars/${filename}`
 
-    const { error: uploadError } = await supabase.storage.from("photos").upload(path, file)
-    if (uploadError) return alert("Erreur upload avatar.")
+    const { error: uploadError } = await supabase.storage
+      .from("photos")
+      .upload(path, file, { upsert: true })
 
-    const { data: publicUrlData } = supabase.storage.from("photos").getPublicUrl(path)
-    const publicUrl = publicUrlData.publicUrl
+    if (uploadError) {
+      console.error("❌ Erreur upload Supabase :", uploadError)
+      return alert("Erreur lors de l'upload de la photo.")
+    }
+
+    const { data: publicUrlData } = supabase
+      .storage
+      .from("photos")
+      .getPublicUrl(path)
+
+    const publicUrl = publicUrlData?.publicUrl
+
+    const { error: updateError } = await supabase
+      .from("utilisateurs")
+      .update({ photo_url: publicUrl })
+      .eq("id", sessionUserId)
+
+    if (updateError) {
+      console.error("❌ Erreur mise à jour Supabase :", updateError)
+      return alert("Photo uploadée mais non enregistrée.")
+    }
 
     setFormData((prev) => ({ ...prev, photo_url: publicUrl }))
+    alert("✅ Photo mise à jour avec succès !")
   }
 
   const handleSubmit = async (e) => {
@@ -93,14 +112,12 @@ export default function Parametres() {
     <div className="max-w-4xl mx-auto bg-white shadow rounded-xl p-8 mt-8 space-y-8">
       <h1 className="text-2xl font-bold text-orange-700">⚙️ Paramètres du compte</h1>
 
-      {/* Photo de profil */}
+      {/* Avatar */}
       <div className="flex items-center gap-4">
         {formData.photo_url ? (
           <img src={formData.photo_url} alt="avatar" className="w-20 h-20 rounded-full object-cover border" />
         ) : (
-          <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 font-bold text-lg border">
-            ?
-          </div>
+          <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 font-bold text-lg border">?</div>
         )}
         <div>
           <label className="block mb-1 font-medium text-sm">Photo de profil</label>
@@ -108,6 +125,7 @@ export default function Parametres() {
         </div>
       </div>
 
+      {/* Formulaire */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-700">
         <Input label="Nom" name="nom" value={formData.nom} onChange={handleChange} />
         <Input label="Prénom" name="prenom" value={formData.prenom} onChange={handleChange} />
@@ -122,10 +140,7 @@ export default function Parametres() {
         <Input label="Numéro RSAC" name="rsac" value={formData.rsac} onChange={handleChange} />
 
         <div className="col-span-full text-right">
-          <button
-            type="submit"
-            className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded shadow"
-          >
+          <button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded shadow">
             💾 Enregistrer mes modifications
           </button>
         </div>
@@ -138,13 +153,7 @@ function Input({ label, name, value, onChange }) {
   return (
     <div className="flex flex-col">
       <label htmlFor={name} className="mb-1 font-medium">{label}</label>
-      <input
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="border border-gray-300 rounded px-3 py-2"
-      />
+      <input id={name} name={name} value={value} onChange={onChange} className="border border-gray-300 rounded px-3 py-2" />
     </div>
   )
 }
