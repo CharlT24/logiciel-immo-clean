@@ -55,7 +55,10 @@ export default function Etape1() {
       console.error("❌ Erreur Supabase :", error)
       alert("Erreur à l’enregistrement")
     } else {
-      const id = data[0].id
+      const insertedBien = data?.[0]
+      if (!insertedBien) return alert("Erreur : bien non inséré")
+
+      const id = insertedBien.id
       router.push(`/biens/ajouter/etape2?id=${id}`)
     }
   }

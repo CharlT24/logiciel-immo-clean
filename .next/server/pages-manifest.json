@@ -1,1 +1,8 @@
-{}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/clients/locataires/[id]": "pages/clients/locataires/[id].js",
+  "/dashboard": "pages/dashboard.js",
+  "/clients/locataires": "pages/clients/locataires.js"
+}

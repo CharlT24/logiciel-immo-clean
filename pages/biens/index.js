@@ -7,12 +7,7 @@ export default function ListeBiens() {
   const [biens, setBiens] = useState([])
   const [allBiens, setAllBiens] = useState([])
   const [agents, setAgents] = useState([])
-  const [filtres, setFiltres] = useState({
-    ville: "",
-    statut: "",
-    agent_id: ""
-  })
-
+  const [filtres, setFiltres] = useState({ ville: "", statut: "", agent_id: "" })
   const router = useRouter()
 
   useEffect(() => {
@@ -25,36 +20,36 @@ export default function ListeBiens() {
     if (!error) {
       setAllBiens(data)
       setBiens(data)
-    } else {
-      console.error("Erreur chargement biens :", error)
     }
   }
 
   const fetchAgents = async () => {
-    const { data, error } = await supabase
-      .from("utilisateurs")
-      .select("id, nom")
-      .eq("role", "agent")
-    if (!error) setAgents(data)
+    const { data } = await supabase.from("utilisateurs").select("id, nom").eq("role", "agent")
+    if (data) setAgents(data)
   }
 
   const handleDelete = async (id) => {
-    if (confirm("Supprimer ce bien ? Cette action est irréversible.")) {
-      const { error } = await supabase.from("biens").delete().eq("id", id)
-  
-      if (!error) {
-        // 🔁 Supprime aussi le bien dans WordPress
+    if (!confirm("Supprimer ce bien ? Cette action est irréversible.")) return
+
+    const { error } = await supabase.from("biens").delete().eq("id", id)
+
+    if (!error) {
+      // ➕ suppression côté WordPress
+      try {
         await fetch(`http://localhost/wordpress/wp-json/oi/v1/supabase-delete/${id}`, {
-          method: "DELETE"
+          method: "DELETE",
         })
-  
-        setBiens((prev) => prev.filter((b) => b.id !== id))
-        alert("Bien supprimé ✅")
-      } else {
-        alert("Erreur lors de la suppression ❌")
+        alert("✅ Bien supprimé sur Supabase & WordPress")
+      } catch (err) {
+        console.error("Erreur WordPress :", err)
+        alert("⚠️ Supprimé de Supabase, mais pas de WordPress")
       }
+
+      setBiens((prev) => prev.filter((b) => b.id !== id))
+    } else {
+      alert("❌ Erreur lors de la suppression")
     }
-  }  
+  }
 
   const handleFiltreChange = (e) => {
     const { name, value } = e.target
@@ -115,15 +110,8 @@ export default function ListeBiens() {
             const image = `https://fkavtsofmglifzalclyn.supabase.co/storage/v1/object/public/photos/covers/${bien.id}/cover.jpg`
 
             return (
-              <div
-                key={bien.id}
-                className="bg-white shadow-lg rounded-2xl overflow-hidden hover:shadow-2xl transition flex flex-col"
-              >
-                <img
-                  src={image}
-                  alt={bien.titre}
-                  className="w-full h-52 object-cover"
-                />
+              <div key={bien.id} className="bg-white shadow-lg rounded-2xl overflow-hidden hover:shadow-2xl transition flex flex-col">
+                <img src={image} alt={bien.titre} className="w-full h-52 object-cover" />
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div>
                     <h2 className="font-bold text-xl text-gray-800 truncate">{bien.titre}</h2>
