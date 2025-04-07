@@ -22,10 +22,25 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/clients/locataires": [
+    "/biens/ajouter/etape5": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/clients/locataires.js"
+      "static/chunks/pages/biens/ajouter/etape5.js"
+    ],
+    "/clients": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/clients.js"
+    ],
+    "/clients/acquereurs": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/clients/acquereurs.js"
+    ],
+    "/clients/proprietaires": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/clients/proprietaires.js"
     ],
     "/dashboard": [
       "static/chunks/webpack.js",

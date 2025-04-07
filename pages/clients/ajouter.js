@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient"
 export default function AjouterClient() {
   const router = useRouter()
   const [form, setForm] = useState({})
+  const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -13,15 +14,49 @@ export default function AjouterClient() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const { nom, email, telephone } = form
-    if (!nom || !email || !telephone) return alert("Nom, email et téléphone sont requis")
+    setLoading(true)
 
-    const { error } = await supabase.from("clients").insert([form])
-    if (error) alert("Erreur lors de l'ajout")
-    else {
-      alert("Client ajouté ✅")
-      router.push("/clients")
+    const { nom, email, telephone, budget_min, budget_max, surface_min } = form
+
+    // Vérification
+    if (!nom || !email || !telephone || !budget_min || !budget_max || !surface_min) {
+      alert("Tous les champs marqués * sont requis.")
+      setLoading(false)
+      return
     }
+
+    // Insertion du client
+    const { error: insertError } = await supabase.from("clients").insert([
+      {
+        nom,
+        email,
+        telephone,
+        type_bien: form.type_bien || null,
+        ville_recherche: form.ville_recherche || null,
+        budget_min: parseInt(budget_min),
+        budget_max: parseInt(budget_max),
+        surface_min: parseInt(surface_min),
+        profil: form.profil || null,
+        canal_entree: form.canal_entree || null,
+        notes: form.notes || null
+      }
+    ])
+
+    if (insertError) {
+      console.error("Erreur insertion :", insertError)
+      alert("Erreur lors de l'ajout du client ❌")
+      setLoading(false)
+      return
+    }
+
+    // Recalcul des rapprochements
+    const { error: rpcError } = await supabase.rpc("recalcul_rapprochements")
+    if (rpcError) {
+      console.warn("Client créé mais recalcul non effectué :", rpcError)
+    }
+
+    alert("Client ajouté ✅")
+    router.push("/clients")
   }
 
   return (
@@ -45,10 +80,9 @@ export default function AjouterClient() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input name="type_bien" value={form.type_bien || ''} onChange={handleChange} className="input" placeholder="Type de bien recherché" />
             <input name="ville_recherche" value={form.ville_recherche || ''} onChange={handleChange} className="input" placeholder="Ville recherchée" />
-            <input type="number" name="budget_min" value={form.budget_min || ''} onChange={handleChange} className="input" placeholder="Budget minimum (€)" />
-            <input type="number" name="budget_max" value={form.budget_max || ''} onChange={handleChange} className="input" placeholder="Budget maximum (€)" />
-            <input type="number" name="surface_min" value={form.surface_min || ''} onChange={handleChange} className="input" placeholder="Surface minimale (m²)" />
-            <input type="number" name="nb_pieces" value={form.nb_pieces || ''} onChange={handleChange} className="input" placeholder="Nombre de pièces minimum" />
+            <input type="number" name="budget_min" value={form.budget_min || ''} onChange={handleChange} className="input" placeholder="Budget minimum (€)" required />
+            <input type="number" name="budget_max" value={form.budget_max || ''} onChange={handleChange} className="input" placeholder="Budget maximum (€)" required />
+            <input type="number" name="surface_min" value={form.surface_min || ''} onChange={handleChange} className="input" placeholder="Surface minimale (m²)" required />
           </div>
         </div>
 
@@ -63,7 +97,9 @@ export default function AjouterClient() {
         </div>
 
         <div className="text-right">
-          <button type="submit" className="bg-orange-600 text-white px-6 py-2 rounded hover:bg-orange-700">💾 Enregistrer</button>
+          <button type="submit" disabled={loading} className="bg-orange-600 text-white px-6 py-2 rounded hover:bg-orange-700">
+            {loading ? "Enregistrement..." : "💾 Enregistrer"}
+          </button>
         </div>
       </form>
     </div>

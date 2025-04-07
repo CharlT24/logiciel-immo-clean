@@ -1,75 +1,48 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
-import { useRouter } from "next/router"
+import Link from "next/link"
 
 export default function ListeProprietaires() {
   const [proprietaires, setProprietaires] = useState([])
-  const [biens, setBiens] = useState([])
-
-  const router = useRouter()
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchData = async () => {
-      // 1. Propriétaires
-      const { data: proprietairesData, error: propErr } = await supabase
-        .from("proprietaires")
+    const fetchProprietaires = async () => {
+      const { data, error } = await supabase
+        .from("proprietaires") // ✅ BONNE TABLE
         .select("*")
 
-      if (propErr) return console.error("Erreur propriétaires:", propErr)
-      setProprietaires(proprietairesData)
+      if (error) {
+        console.error("Erreur Supabase:", error)
+      } else {
+        console.log("Données récupérées:", data)
+        setProprietaires(data)
+      }
 
-      // 2. Tous les biens (pour faire le lien)
-      const { data: biensData, error: biensErr } = await supabase
-        .from("biens")
-        .select("id, titre, ville, code_postal")
-
-      if (biensErr) return console.error("Erreur biens:", biensErr)
-      setBiens(biensData)
+      setLoading(false)
     }
 
-    fetchData()
+    fetchProprietaires()
   }, [])
 
-  const getBienInfo = (bienId) => {
-    return biens.find((b) => b.id === bienId)
-  }
+  if (loading) return <p className="p-10 text-center">Chargement...</p>
 
   return (
-    <div className="max-w-7xl mx-auto p-8 space-y-8">
-      <h1 className="text-3xl font-bold text-orange-600">🏠 Propriétaires</h1>
+    <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
+      <h1 className="text-3xl font-bold text-orange-600">📋 Liste des propriétaires</h1>
 
       {proprietaires.length === 0 ? (
-        <p className="text-gray-500 mt-6">Aucun propriétaire enregistré pour le moment.</p>
+        <p className="text-gray-500 mt-10">Aucun propriétaire trouvé.</p>
       ) : (
-        <div className="grid gap-6">
-          {proprietaires.map((prop) => {
-            const bien = getBienInfo(prop.bien_id)
-
-            return (
-              <div key={prop.id} className="bg-white rounded-xl shadow p-6 space-y-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-lg font-semibold">{prop.nom} {prop.prenom}</h2>
-                    <p className="text-sm text-gray-600">📞 {prop.telephone || "Non renseigné"}</p>
-                    <p className="text-sm text-gray-600">📧 {prop.email || "Non renseigné"}</p>
-                    <p className="text-sm text-gray-600">🪪 {prop.civilite} — {prop.mandat ? `Mandat : ${prop.mandat}` : "Mandat non renseigné"}</p>
-                    {prop.adresse && <p className="text-sm text-gray-600">🏠 {prop.adresse}</p>}
-                  </div>
-                  {bien && (
-                    <div className="text-right">
-                      <p className="text-xs text-gray-400 mb-1">Bien associé :</p>
-                      <button
-                        onClick={() => router.push(`/biens/${bien.id}`)}
-                        className="text-orange-600 hover:underline text-sm"
-                      >
-                        {bien.titre} ({bien.ville})
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {proprietaires.map((p) => (
+            <div key={p.id} className="bg-white p-4 rounded-xl shadow space-y-2">
+              <h2 className="text-lg font-semibold text-gray-800">{p.nom}</h2>
+              <p className="text-sm text-gray-500">{p.email}</p>
+              <p className="text-sm text-gray-500">{p.telephone}</p>
+              <Link href={`/clients/proprietaires/${p.id}`} className="text-orange-600 hover:underline text-sm">Voir la fiche</Link>
+            </div>
+          ))}
         </div>
       )}
     </div>

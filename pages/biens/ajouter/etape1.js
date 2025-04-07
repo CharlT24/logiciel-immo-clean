@@ -53,10 +53,16 @@ export default function Etape1() {
 
     if (error) {
       console.error("❌ Erreur Supabase :", error)
-      alert("Erreur à l’enregistrement")
+      alert("Erreur à l’enregistrement du bien")
     } else {
       const insertedBien = data?.[0]
       if (!insertedBien) return alert("Erreur : bien non inséré")
+
+      // ✅ Recalcul des rapprochements automatique
+      const { error: rpcError } = await supabase.rpc("recalcul_rapprochements")
+      if (rpcError) {
+        console.warn("⚠️ Bien créé, mais rapprochement non recalculé :", rpcError)
+      }
 
       const id = insertedBien.id
       router.push(`/biens/ajouter/etape2?id=${id}`)
@@ -72,22 +78,12 @@ export default function Etape1() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="text-sm font-semibold">Titre du bien</label>
-          <input
-            type="text"
-            className="input"
-            value={titre}
-            onChange={(e) => setTitre(e.target.value)}
-            placeholder="Ex: Maison avec jardin"
-          />
+          <input type="text" className="input" value={titre} onChange={(e) => setTitre(e.target.value)} placeholder="Ex: Maison avec jardin" />
         </div>
 
         <div>
           <label className="text-sm font-semibold">Type de bien</label>
-          <select
-            className="input"
-            value={typeBien}
-            onChange={(e) => setTypeBien(e.target.value)}
-          >
+          <select className="input" value={typeBien} onChange={(e) => setTypeBien(e.target.value)}>
             <option value="">-- Sélectionner --</option>
             <option value="Maison">Maison</option>
             <option value="Appartement">Appartement</option>
@@ -98,33 +94,17 @@ export default function Etape1() {
 
         <div>
           <label className="text-sm font-semibold">Ville</label>
-          <input
-            type="text"
-            className="input"
-            value={ville}
-            onChange={(e) => setVille(e.target.value)}
-            placeholder="Ex: Bordeaux"
-          />
+          <input type="text" className="input" value={ville} onChange={(e) => setVille(e.target.value)} placeholder="Ex: Bordeaux" />
         </div>
 
         <div>
           <label className="text-sm font-semibold">Code postal</label>
-          <input
-            type="text"
-            className="input"
-            value={cp}
-            onChange={(e) => setCp(e.target.value)}
-            placeholder="Ex: 33000"
-          />
+          <input type="text" className="input" value={cp} onChange={(e) => setCp(e.target.value)} placeholder="Ex: 33000" />
         </div>
 
         <div>
           <label className="text-sm font-semibold">Type de mandat</label>
-          <select
-            className="input"
-            value={mandat}
-            onChange={(e) => setMandat(e.target.value)}
-          >
+          <select className="input" value={mandat} onChange={(e) => setMandat(e.target.value)}>
             <option value="">-- Choisir --</option>
             <option value="Exclusif">Exclusif</option>
             <option value="Simple">Simple</option>
@@ -134,11 +114,7 @@ export default function Etape1() {
 
         <div>
           <label className="text-sm font-semibold">Statut du bien</label>
-          <select
-            className="input"
-            value={statut}
-            onChange={(e) => setStatut(e.target.value)}
-          >
+          <select className="input" value={statut} onChange={(e) => setStatut(e.target.value)}>
             <option value="Disponible">Disponible</option>
             <option value="Sous compromis">Sous compromis</option>
             <option value="Vendu">Vendu</option>

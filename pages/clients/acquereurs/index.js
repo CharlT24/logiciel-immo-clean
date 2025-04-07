@@ -1,74 +1,67 @@
+// pages/clients/acquereur/index.js
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
+import { useRouter } from "next/router"
 
-export default function ListeClients() {
+export default function ListeAcquereurs() {
   const [clients, setClients] = useState([])
-  const [userId, setUserId] = useState(null)
   const [role, setRole] = useState("")
+  const router = useRouter()
 
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchData = async () => {
       const session = await supabase.auth.getSession()
-      const agentId = session.data?.session?.user?.id
-      setUserId(agentId)
+      const userId = session.data?.session?.user?.id
 
-      // 🔐 Récupérer rôle
-      const { data: userData } = await supabase
+      const { data: user } = await supabase
         .from("utilisateurs")
         .select("role")
-        .eq("id", agentId)
+        .eq("id", userId)
         .single()
+      setRole(user?.role)
 
-      const roleUser = userData?.role || ""
-      setRole(roleUser)
+      const { data: clientsData } = await supabase
+        .from("clients")
+        .select("*")
+        .order("created_at", { ascending: false })
 
-      // 📦 Récupérer clients selon rôle
-      let query = supabase.from("clients").select("*")
-      if (roleUser !== "admin") {
-        query = query.eq("agent_id", agentId)
-      }
-
-      const { data, error } = await query
-      if (!error) setClients(data)
+      setClients(clientsData || [])
     }
 
-    fetchClients()
+    fetchData()
   }, [])
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">👥 {role === "admin" ? "Tous les clients" : "Mes clients"}</h2>
-        <Link href="/clients/ajouter" className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">
-          ➕ Ajouter un client
+        <h1 className="text-3xl font-bold text-orange-600">👥 Acquéreurs</h1>
+        <Link href="/clients/acquereur/ajouter" legacyBehavior>
+          <a className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 text-sm">➕ Ajouter</a>
         </Link>
       </div>
 
       {clients.length === 0 ? (
-        <p className="text-gray-500">Aucun client pour le moment.</p>
+        <p className="text-gray-500 mt-10">Aucun acquéreur enregistré.</p>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {clients.map((client) => (
-            <div key={client.id} className="bg-white p-4 shadow rounded-lg">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-bold text-lg">{client.nom}</h3>
-                  <p className="text-sm text-gray-600">{client.email}</p>
-                  <p className="text-sm text-gray-600">📍 {client.ville_recherche}</p>
-                  <p className="text-sm text-gray-600">
-                    💶 {client.budget_min?.toLocaleString()} € – {client.budget_max?.toLocaleString()} €
-                  </p>
-                </div>
+            <div key={client.id} className="bg-white p-5 rounded-xl shadow space-y-2">
+              <p className="font-semibold text-lg text-gray-800">{client.nom}</p>
+              <p className="text-sm text-gray-500">{client.email}</p>
+              <p className="text-sm text-gray-500">📞 {client.telephone}</p>
+              <p className="text-sm text-gray-500">🏡 {client.ville_recherche || "-"}</p>
+              <p className="text-sm text-gray-500">
+                💶 {client.budget_min?.toLocaleString()}€ - {client.budget_max?.toLocaleString()}€
+              </p>
 
-                {(role === "admin" || client.agent_id === userId) && (
-                  <Link
-                    href={`/clients/${client.id}/modifier`}
-                    className="text-orange-600 hover:underline text-sm"
-                  >
-                    ✏️ Modifier
-                  </Link>
-                )}
+              <div className="flex gap-4 pt-2 text-sm">
+                <Link href={`/clients/acquereurs/${client.id}`} legacyBehavior>
+                  <a className="text-blue-600 hover:underline">Voir fiche</a>
+                </Link>
+                <Link href={`/clients/acquereurs/modifier?id=${client.id}`} legacyBehavior>
+                  <a className="text-orange-600 hover:underline">Modifier</a>
+                </Link>
               </div>
             </div>
           ))}

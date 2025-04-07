@@ -2,6 +2,9 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
 import dynamic from "next/dynamic"
+import CapsuleDerniereVisite from "@/components/dashboard/CapsuleDerniereVisite"
+import CapsuleVisitesDashboard from "@/components/dashboard/CapsuleVisitesDashboard"
+import CapsuleRappelMandat from "@/components/dashboard/CapsuleRappelMandat"
 
 const PDFViewer = dynamic(() => import("@/components/PDFViewer"), { ssr: false })
 
@@ -90,7 +93,12 @@ export default function Dashboard() {
         <StatCard label="📄 Documents" value="Accéder" color="purple" href="/documents" />
       </div>
 
-      {/* Top vendeurs */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <CapsuleVisitesDashboard />
+        <CapsuleDerniereVisite />
+        <CapsuleRappelMandat />
+      </div>
+
       <div className="bg-white shadow-md rounded-xl p-6 border">
         <h3 className="text-lg font-bold mb-4 text-orange-700">🏆 Top vendeurs du réseau</h3>
         <ul className="space-y-2 text-sm">
@@ -105,7 +113,6 @@ export default function Dashboard() {
         </ul>
       </div>
 
-      {/* Top compromis */}
       {topCompromis.length > 0 && (
         <div className="bg-white shadow-md rounded-xl p-6 border">
           <h3 className="text-lg font-bold mb-4 text-green-700">🔒 Top compromis</h3>
@@ -113,7 +120,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Newsletter */}
       {newsletterUrl && (
         <div className="bg-white shadow-md rounded-xl p-6 border">
           <h3 className="text-lg font-bold mb-4 text-purple-700">📰 Dernière newsletter</h3>
