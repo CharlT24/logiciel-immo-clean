@@ -13,7 +13,9 @@ export default function Etape5() {
       adresse_principale: "",
       adresse_differente: "",
       numero_mandat: "",
-    },
+      date_debut_mandat: "",
+      date_fin_mandat: ""
+    }
   ])
 
   const [loading, setLoading] = useState(false)
@@ -35,7 +37,9 @@ export default function Etape5() {
         adresse_principale: "",
         adresse_differente: "",
         numero_mandat: "",
-      },
+        date_debut_mandat: "",
+        date_fin_mandat: ""
+      }
     ])
   }
 
@@ -72,7 +76,7 @@ export default function Etape5() {
       return
     }
 
-    // 📦 Récupération du bien
+    // Récupération du bien
     const { data: bien, error } = await supabase
       .from("biens")
       .select("*")
@@ -86,17 +90,11 @@ export default function Etape5() {
       return
     }
 
-    // 📸 Photos
     const coverUrl = `https://fkavtsofmglifzalclyn.supabase.co/storage/v1/object/public/photos/covers/${id}/cover.jpg`
     const { data: galleryData } = await supabase.storage.from("photos").list(`gallery/${id}`)
     const gallery = galleryData?.map(photo => `https://fkavtsofmglifzalclyn.supabase.co/storage/v1/object/public/photos/gallery/${id}/${photo.name}`) || []
 
-    // ✅ Envoi à WordPress
-    const payload = {
-      ...bien,
-      cover: coverUrl,
-      gallery,
-    }
+    const payload = { ...bien, cover: coverUrl, gallery }
 
     fetch("http://localhost/wordpress/wp-json/oi/v1/biens", {
       method: "POST",
@@ -128,6 +126,8 @@ export default function Etape5() {
           <Input label="Adresse principale" value={prop.adresse_principale} onChange={(val) => handleChange(index, "adresse_principale", val)} />
           <Input label="Adresse différente (facultative)" value={prop.adresse_differente} onChange={(val) => handleChange(index, "adresse_differente", val)} />
           <Input label="Numéro de mandat" value={prop.numero_mandat} onChange={(val) => handleChange(index, "numero_mandat", val)} />
+          <Input label="Date début mandat" value={prop.date_debut_mandat} onChange={(val) => handleChange(index, "date_debut_mandat", val)} type="date" />
+          <Input label="Date fin mandat" value={prop.date_fin_mandat} onChange={(val) => handleChange(index, "date_fin_mandat", val)} type="date" />
         </div>
       ))}
 
@@ -150,12 +150,12 @@ export default function Etape5() {
   )
 }
 
-function Input({ label, value, onChange }) {
+function Input({ label, value, onChange, type = "text" }) {
   return (
     <div>
       <label className="block text-sm font-medium mb-1">{label}</label>
       <input
-        type="text"
+        type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full border border-gray-300 rounded px-3 py-2"

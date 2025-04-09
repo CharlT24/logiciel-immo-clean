@@ -40,15 +40,23 @@ export default function Etape2() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value
-    }))
+    const newValue = type === "checkbox" ? checked : value
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: newValue }
+
+      // Calcul automatique du prix_vente
+      if (["prix_net_vendeur", "honoraires"].includes(name)) {
+        const prixNet = parseFloat(updated.prix_net_vendeur || 0)
+        const honoraires = parseFloat(updated.honoraires || 0)
+        updated.prix_vente = (prixNet + honoraires).toFixed(2)
+      }
+
+      return updated
+    })
   }
 
   const toFloat = (v) => v === "" ? null : parseFloat(v)
   const toInt = (v) => v === "" ? null : parseInt(v)
-
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -100,7 +108,6 @@ export default function Etape2() {
         <Input label="Nombre de pièces*" name="nb_pieces" value={formData.nb_pieces} onChange={handleChange} required />
         <Input label="Nombre de chambres" name="nb_chambres" value={formData.nb_chambres} onChange={handleChange} />
         <Input label="Étage" name="etage" value={formData.etage} onChange={handleChange} />
-
         <Select label="Classe DPE" name="dpe" value={formData.dpe} onChange={handleChange} options={["A", "B", "C", "D", "E", "F", "G"]} />
         <Input label="Indice consommation (kWhEP/m².an)" name="dpe_conso_indice" value={formData.dpe_conso_indice} onChange={handleChange} />
         <Input label="Indice GES (kg CO₂/m².an)" name="dpe_ges_indice" value={formData.dpe_ges_indice} onChange={handleChange} />
@@ -120,7 +127,7 @@ export default function Etape2() {
         <Input label="Prix net vendeur (€)*" name="prix_net_vendeur" value={formData.prix_net_vendeur} onChange={handleChange} required />
         <Input label="Honoraires (€)*" name="honoraires" value={formData.honoraires} onChange={handleChange} required />
         <Input label="% Honoraires" name="pourcentage_honoraires" value={formData.pourcentage_honoraires} onChange={handleChange} />
-        <Input label="💰 Prix total affiché (€)*" name="prix_vente" value={formData.prix_vente} onChange={handleChange} required />
+        <Input label="💰 Prix total affiché (€)" name="prix_vente" value={formData.prix_vente} onChange={handleChange} readOnly />
         <Input label="Taxe foncière (€)" name="taxe_fonciere" value={formData.taxe_fonciere} onChange={handleChange} />
         <Input label="Quote-part annuelle (€)" name="quote_part_charges" value={formData.quote_part_charges} onChange={handleChange} />
         <Input label="Fonds travaux (€)" name="fonds_travaux" value={formData.fonds_travaux} onChange={handleChange} />
@@ -153,11 +160,20 @@ export default function Etape2() {
   )
 }
 
-function Input({ label, name, value, onChange, required = false }) {
+// Composants
+function Input({ label, name, value, onChange, required = false, readOnly = false }) {
   return (
     <div>
       <label className="block font-medium text-sm mb-1">{label}</label>
-      <input name={name} value={value} onChange={onChange} required={required} className="w-full border border-gray-300 rounded px-3 py-2" type="text" />
+      <input
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        readOnly={readOnly}
+        className={`w-full border border-gray-300 rounded px-3 py-2 ${readOnly ? 'bg-gray-100' : ''}`}
+        type="text"
+      />
     </div>
   )
 }

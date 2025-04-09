@@ -79,7 +79,7 @@ export default function AdminPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <button
-          onClick={() => router.push("/admin/utilisateurs")}
+          onClick={() => router.push("/admin/parametres/utilisateurs")}
           className="bg-orange-500 text-white px-5 py-4 rounded shadow hover:bg-orange-600 transition"
         >
           👥 Gérer les utilisateurs

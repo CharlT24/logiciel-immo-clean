@@ -22,30 +22,50 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/biens/ajouter/etape5": [
+    "/admin": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/biens/ajouter/etape5.js"
+      "static/chunks/pages/admin.js"
+    ],
+    "/admin/export": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/admin/export.js"
+    ],
+    "/admin/parametres/utilisateurs": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/admin/parametres/utilisateurs.js"
+    ],
+    "/agents": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/agents.js"
     ],
     "/clients": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/clients.js"
     ],
-    "/clients/acquereurs": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/clients/acquereurs.js"
-    ],
-    "/clients/proprietaires": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/clients/proprietaires.js"
-    ],
     "/dashboard": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/dashboard.js"
+    ],
+    "/export": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/export.js"
+    ],
+    "/immopro": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/immopro.js"
+    ],
+    "/immopro/modifier/[id]": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/immopro/modifier/[id].js"
     ]
   },
   "ampFirstPages": []

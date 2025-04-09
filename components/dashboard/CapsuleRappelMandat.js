@@ -1,4 +1,3 @@
-// components/dashboard/CapsuleRappelMandat.js
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import Link from "next/link"
@@ -10,12 +9,14 @@ export default function CapsuleRappelMandat() {
     const fetchRappels = async () => {
       const today = new Date()
       const futureDate = new Date()
-      futureDate.setMonth(today.getMonth() + 1)
+      futureDate.setDate(today.getDate() + 30)
 
       const { data, error } = await supabase
         .from("biens")
         .select("id, titre, date_fin_mandat")
+        .not("date_fin_mandat", "is", null)
         .lte("date_fin_mandat", futureDate.toISOString())
+        .order("date_fin_mandat", { ascending: true })
 
       if (!error && data) setRappels(data)
     }
@@ -31,11 +32,11 @@ export default function CapsuleRappelMandat() {
       ) : (
         <ul className="space-y-2 text-sm">
           {rappels.map(bien => (
-            <li key={bien.id} className="flex justify-between">
+            <li key={bien.id} className="flex justify-between items-center">
               <Link href={`/biens/${bien.id}`} className="text-orange-600 hover:underline">
                 {bien.titre}
               </Link>
-              <span className="text-gray-500">{new Date(bien.date_fin_mandat).toLocaleDateString()}</span>
+              <span className="text-gray-500">{new Date(bien.date_fin_mandat).toLocaleDateString("fr-FR")}</span>
             </li>
           ))}
         </ul>

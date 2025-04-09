@@ -1,37 +1,44 @@
-import { useEffect, useState } from "react"
-import { useRouter } from "next/router"
-import { supabase } from "@/lib/supabaseClient"
-import Image from "next/image"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import { supabase } from "@/lib/supabaseClient";
+import Image from "next/image";
 
 export default function Layout({ children }) {
-  const router = useRouter()
-  const [isAdmin, setIsAdmin] = useState(false)
+  const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isMounted, setIsMounted] = useState(false); // Gestion du montage client
 
-  const pagesSansSidebar = ["/login", "/register"]
+  const pagesSansSidebar = ["/login", "/register"];
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      const userId = session?.user?.id
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
       if (userId) {
         const { data: userData } = await supabase
           .from("utilisateurs")
           .select("role")
           .eq("id", userId)
-          .single()
+          .single();
 
         if (userData?.role === "admin") {
-          setIsAdmin(true)
+          setIsAdmin(true);
         }
       }
-    }
+    };
 
-    fetchUser()
-  }, [])
+    fetchUser();
+    setIsMounted(true); // Marquer comme monté côté client
+  }, []);
 
   // Ne pas afficher la sidebar sur les pages login/register
   if (pagesSansSidebar.includes(router.pathname)) {
-    return <main>{children}</main>
+    return <main>{children}</main>;
+  }
+
+  // Afficher "Loading..." jusqu'à ce que le composant soit monté côté client
+  if (!isMounted) {
+    return <div>Loading...</div>;
   }
 
   return (
@@ -51,25 +58,28 @@ export default function Layout({ children }) {
         <button onClick={() => router.push("/clients")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">👥 Clients</button>
         <button onClick={() => router.push("/biens")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">🏡 Biens</button>
 
-        {/* Rapprochement avec protection */}
+        {/* Ajouter le lien immopro avec vérification de la page actuelle */}
         <button
           onClick={() => {
-            if (router.pathname !== "/rapprochement") {
-              router.push("/rapprochement")
+            // Vérifie si l'utilisateur est déjà sur la page "/immopro"
+            if (router.pathname !== "/immopro") {
+              router.push("/immopro");
+            } else {
+              router.replace("/immopro"); // Remplacer la page sans redirection hard
             }
           }}
-          className={`block w-full text-left py-2 px-3 rounded transition hover:bg-orange-100 ${router.pathname === "/rapprochement" ? "bg-orange-100 font-semibold text-orange-700" : ""}`}
+          className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition"
         >
-          🔗 Rapprochement
+          🏢 immopro
         </button>
 
+        {/* Autres liens de navigation */}
         <button
-  onClick={() => router.push("/agents")}
-  className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition"
->
-  🧑‍💼 Agents
-</button>
-
+          onClick={() => router.push("/agents")}
+          className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition"
+        >
+          🧑‍💼 Agents
+        </button>
 
         <button onClick={() => router.push("/export")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">📤 Export</button>
         <button onClick={() => router.push("/agenda")} className="block w-full text-left py-2 px-3 rounded hover:bg-orange-100 transition">📅 Agenda</button>
@@ -102,5 +112,5 @@ export default function Layout({ children }) {
         {children}
       </main>
     </div>
-  )
+  );
 }

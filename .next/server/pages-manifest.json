@@ -2,10 +2,13 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/biens/ajouter/etape5": "pages/biens/ajouter/etape5.js",
+  "/immopro": "pages/immopro.js",
   "/clients": "pages/clients.js",
-  "/clients/proprietaires": "pages/clients/proprietaires.js",
-  "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
+  "/export": "pages/export.js",
   "/dashboard": "pages/dashboard.js",
-  "/clients/acquereurs": "pages/clients/acquereurs.js"
+  "/immopro/modifier/[id]": "pages/immopro/modifier/[id].js",
+  "/agents": "pages/agents.js",
+  "/admin": "pages/admin.js",
+  "/admin/export": "pages/admin/export.js",
+  "/admin/parametres/utilisateurs": "pages/admin/parametres/utilisateurs.js"
 }
