@@ -2,10 +2,11 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/dashboard": "pages/dashboard.js",
-  "/biens/ajouter/etape1": "pages/biens/ajouter/etape1.js",
-  "/biens": "pages/biens.js",
+  "/admin": "pages/admin.js",
+  "/admin/parametres/utilisateurs": "pages/admin/parametres/utilisateurs.js",
+  "/admin/export": "pages/admin/export.js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/rapprochement": "pages/rapprochement.js",
-  "/api/proxy": "pages/api/proxy.js"
+  "/api/export/[portail]": "pages/api/export/[portail].js",
+  "/dashboard": "pages/dashboard.js",
+  "/biens": "pages/biens.js"
 }

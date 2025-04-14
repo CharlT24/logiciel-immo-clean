@@ -1,3 +1,4 @@
+// pages/biens/[id]/export.js
 import { useRouter } from "next/router"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
@@ -6,6 +7,7 @@ export default function FicheBien() {
   const router = useRouter()
   const { id } = router.query
   const [bien, setBien] = useState(null)
+  const [proprietaires, setProprietaires] = useState([])
   const [coverUrl, setCoverUrl] = useState(null)
   const [galleryUrls, setGalleryUrls] = useState([])
   const [loading, setLoading] = useState(true)
@@ -14,6 +16,7 @@ export default function FicheBien() {
     if (id) {
       fetchBien()
       fetchPhotos()
+      fetchProprietaires()
     }
   }, [id])
 
@@ -21,6 +24,11 @@ export default function FicheBien() {
     const { data, error } = await supabase.from("biens").select("*").eq("id", id).single()
     if (!error) setBien(data)
     setLoading(false)
+  }
+
+  const fetchProprietaires = async () => {
+    const { data } = await supabase.from("proprietaires").select("*").eq("bien_id", id)
+    if (data) setProprietaires(data)
   }
 
   const fetchPhotos = async () => {
@@ -37,6 +45,7 @@ export default function FicheBien() {
   }
 
   if (loading || !bien) return <p className="text-center mt-10">Chargement...</p>
+  if (bien?.statut?.toLowerCase() === "archivé") return <p className="text-center mt-10 text-red-600">Ce bien est archivé.</p>
 
   const totalPrix = (bien.prix_vente || 0) + (bien.honoraires || 0)
 
@@ -44,6 +53,10 @@ export default function FicheBien() {
     <div className="max-w-6xl mx-auto p-6 space-y-10">
       <div className="flex justify-between items-center">
         <button onClick={() => router.push("/biens")} className="text-orange-600 text-sm hover:underline">⬅️ Retour</button>
+        <div className="flex gap-4">
+          <a href={`/api/pdf/vitrine?id=${id}`} target="_blank" className="text-sm bg-orange-100 px-4 py-2 rounded shadow hover:bg-orange-200">📄 Fiche Vitrine PDF</a>
+          <a href={`/api/pdf/prive?id=${id}`} target="_blank" className="text-sm bg-gray-100 px-4 py-2 rounded shadow hover:bg-gray-200">🔒 Fiche Privée PDF</a>
+        </div>
       </div>
 
       <h1 className="text-3xl font-bold text-orange-600">🏡 {bien.titre}</h1>
@@ -54,7 +67,7 @@ export default function FicheBien() {
 
       {galleryUrls.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-orange-500 mt-6 mb-2">📸 Galerie</h2>
+          <h2 className="text-lg font-semibold text-orange-500 mt-6 mb-2">📸 Galerie ({galleryUrls.length} photos)</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {galleryUrls.map((url, idx) => (
               <img key={idx} src={url} className="rounded-lg shadow h-40 object-cover" />
@@ -72,7 +85,19 @@ export default function FicheBien() {
         <p>🏗️ Année : <strong>{bien.annee_construction}</strong></p>
         <p>🔥 Chauffage : <strong>{bien.type_chauffage} ({bien.mode_chauffage})</strong></p>
         <p>🌍 Terrain : <strong>{bien.surface_terrain} m²</strong></p>
+        <p>📐 Carrez : <strong>{bien.surface_carrez} m²</strong></p>
       </div>
+
+      {bien.options?.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-orange-500">⚙️ Options & Caractéristiques</h2>
+          <ul className="flex flex-wrap gap-2 text-sm mt-2">
+            {bien.options.map((opt, idx) => (
+              <li key={idx} className="bg-orange-100 px-3 py-1 rounded-full shadow text-gray-700">{opt}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="bg-orange-50 p-4 rounded shadow text-sm">
         <p>💰 Prix de vente : <strong>{bien.prix_vente?.toLocaleString()} €</strong></p>
@@ -84,7 +109,7 @@ export default function FicheBien() {
         <p>🏛️ Fonds travaux : {bien.fonds_travaux} €</p>
       </div>
 
-      {/* Bloc DPE stylisé */}
+      {/* Bloc DPE */}
       {bien.dpe && bien.dpe !== "" && (
         <div className="mt-10">
           <h2 className="text-lg font-semibold text-orange-500">🔍 Diagnostic Énergétique</h2>
@@ -98,7 +123,6 @@ export default function FicheBien() {
                 <p>🌫️ GES (CO₂) : {bien.dpe_ges_indice} kgCO₂/m²/an</p>
                 <p>🔥 Énergie finale : {bien.energie_finale_kwh} kWh/m²/an</p>
                 <p>💶 Estimation annuelle : {bien.dpe_cout_min} € – {bien.dpe_cout_max} €</p>
-                <p className="text-gray-500 italic">Données estimées sur l'année de référence 2023</p>
               </div>
             </div>
           )}
@@ -112,6 +136,24 @@ export default function FicheBien() {
             {bien.description}
             {'\n\n'}🔍 Infos risques : <a href="https://www.georisques.gouv.fr" className="text-blue-600 underline" target="_blank">Géorisques</a>
           </p>
+        </div>
+      )}
+
+      {proprietaires.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-lg font-semibold text-orange-500">👤 Propriétaires</h2>
+          <div className="space-y-3 text-sm">
+            {proprietaires.map((p, idx) => (
+              <div key={idx} className="bg-gray-50 border p-4 rounded shadow">
+                <p><strong>{p.prenom} {p.nom}</strong></p>
+                <p>Email : {p.email}</p>
+                <p>Téléphone : {p.telephone}</p>
+                <p>Adresse : {p.adresse_principale}</p>
+                {p.adresse_differente && <p>Adresse 2 : {p.adresse_differente}</p>}
+                <p>Mandat #{p.numero_mandat} – du {p.date_debut_mandat} au {p.date_fin_mandat}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

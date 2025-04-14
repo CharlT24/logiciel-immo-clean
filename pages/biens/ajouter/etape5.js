@@ -87,6 +87,7 @@ export default function Etape5() {
       console.error("❌ Erreur Supabase :", error)
       alert("Erreur de récupération du bien")
       setLoading(false)
+      router.push("/biens")
       return
     }
 
@@ -101,16 +102,17 @@ export default function Etape5() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     })
-      .then(res => res.json())
       .then(response => {
         console.log("✅ Bien envoyé à WordPress :", response)
-        router.push("/biens")
       })
       .catch(err => {
         console.error("❌ Erreur WordPress :", err)
         alert("Erreur lors de l'envoi à WordPress")
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        setLoading(false)
+        router.push("/biens")
+      })
   }
 
   return (
